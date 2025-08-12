@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRAAP! — Pac‑Style PLUS (Single‑File ES5 v1.2)</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<style>
+  body{margin:0;background:#0b1020}
+  #craap-pac { font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans"; color:#0f172a; }
+  .titlebar{position:relative; z-index:5; background:linear-gradient(90deg,#fda4af,#a7f3d0,#93c5fd); padding:.75rem 1rem; border-radius:.75rem; margin:.5rem auto 0; box-shadow:0 8px 20px rgba(0,0,0,.15); max-width:1200px}
+  .titlebar h1{margin:0; font-weight:900; text-transform:uppercase; letter-spacing:.5px; font-size:clamp(1.2rem,3vw,1.6rem)}
+  .subtitle{font-size:.9rem; opacity:.9}
+  .controls{display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; justify-content:flex-end}
+  .btn{cursor:pointer; user-select:none; border:0; padding:.5rem .75rem; border-radius:.5rem; font-weight:800; box-shadow:0 4px 10px rgba(0,0,0,.12)}
+  .btn-primary{background:#4f46e5; color:#fff}
+  .btn-secondary{background:#0ea5e9; color:#fff}
+  .btn-success{background:#16a34a; color:#fff}
+  .btn-danger{background:#ef4444; color:#fff}
+  .stage{position:relative; width:calc(100% - 2rem); margin: .75rem auto 1rem; max-width:1200px; background:#0b1020; border-radius:.75rem; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,.2)}
+  .plx{position:absolute; inset:0; overflow:hidden}
+  .layer{position:absolute; inset:-10%; will-change:transform; background-repeat:repeat-x; background-position:0 100%; image-rendering:pixelated}
+  .layer.sky{background:linear-gradient(#22d3ee 0%, #60a5fa 55%, #c4b5fd 100%); z-index:0}
+  .layer.mountains{z-index:1; background-image: radial-gradient(closest-side at 30% 100%, #1e293b 0 60%, transparent 61%), radial-gradient(closest-side at 70% 100%, #334155 0 60%, transparent 61%); background-size:50% 70%, 60% 80%; opacity:.5}
+  .layer.trees{z-index:2; background-image: radial-gradient(circle at 20% 90%, #0f5132 0 12px, transparent 13px), radial-gradient(circle at 40% 90%, #14532d 0 14px, transparent 15px), radial-gradient(circle at 60% 90%, #065f46 0 16px, transparent 17px), radial-gradient(circle at 80% 90%, #064e3b 0 12px, transparent 13px); background-size:180px 100%, 200px 100%, 220px 100%, 180px 100%; opacity:.65}
+  canvas{position:relative; z-index:3; width:100%; height:100%; display:block}
+  .panel{position:absolute; right:.75rem; top:.75rem; z-index:6; background:rgba(255,255,255,.94); border-radius:.75rem; padding:.75rem; width:min(440px, 36%); box-shadow:0 10px 25px rgba(0,0,0,.2); backdrop-filter:blur(2px); max-height:85%; overflow:auto}
+  .badge{display:inline-flex; align-items:center; gap:.35rem; background:#111827; color:#fff; padding:.35rem .6rem; border-radius:999px; font-weight:800; font-size:.9rem}
+  .hud{display:flex; gap:.5rem; flex-wrap:wrap; align-items:center}
+  .hs-list{list-style:none; padding:0; margin:.35rem 0 0}
+  .hs-list li{padding:.35rem .5rem; background:#f3f4f6; border-radius:.5rem; display:flex; justify-content:space-between; font-weight:800; margin-bottom:.35rem}
+  .toast{position:absolute; left:50%; top:1rem; transform:translateX(-50%); z-index:40; background:#111827; color:#fff; border-radius:.5rem; padding:.35rem .6rem; font-weight:800; display:none}
+  .toast.show{display:block}
+  .modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:50}
+  .modal-backdrop.show{display:flex}
+  .modal-card{background:#fff; border-radius:.9rem; width:min(760px, calc(100% - 2rem)); padding:1rem; box-shadow:0 20px 40px rgba(0,0,0,.35)}
+  .choice{border:2px solid #e5e7eb; padding:.6rem .7rem; border-radius:.6rem; cursor:pointer; font-weight:800}
+  .explain{background:#f8fafc; padding:.6rem .7rem; border-radius:.5rem; border:1px dashed #cbd5e1}
+  .opt-row{display:flex; gap:.5rem; align-items:center; margin:.25rem 0; flex-wrap:wrap}
+  .opt-row label{font-weight:800}
+  .opt-row input[type=range]{width:160px}
+  .err { position:fixed; left:0; right:0; bottom:0; z-index:99; background:#fee2e2; color:#991b1b; font-weight:700; padding:.5rem .75rem; display:none }
+  noscript{display:block; background:#fee2e2; color:#7f1d1d; padding:10px; text-align:center; font-weight:900}
+</style>
+</head>
+<body>
+<noscript>⚠️ JavaScript appears to be blocked. If you opened this locally, please host it (e.g., GitHub Pages).</noscript>
+<div id="craap-pac">
+  <div class="titlebar">
+    <div style="display:flex; gap:1rem; align-items:center; justify-content:space-between;">
+      <h1>CRAAP<span style="color:#f43f5e">!</span> <span class="subtitle">— Pac‑style PLUS</span></h1>
+      <div class="controls">
+        <button class="btn btn-primary" id="btnStart">Start / New Game</button>
+        <button class="btn btn-secondary" id="btnHelp">Help</button>
+        <button class="btn btn-success" id="btnMute" aria-pressed="false">Sound: On</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="plx">
+      <div class="layer sky" data-depth="0.05"></div>
+      <div class="layer mountains" data-depth="0.12"></div>
+      <div class="layer trees" data-depth="0.22"></div>
+    </div>
+    <canvas id="game" role="img" aria-label="Pac‑style playfield"></canvas>
+
+    <div class="panel">
+      <h3>Heads‑Up Display</h3>
+      <div class="hud">
+        <span class="badge" id="bPlanes">✈️ Planes: <strong>0</strong></span>
+        <span class="badge" id="bBonus">⭐ Bonus: <strong>0</strong></span>
+        <span class="badge" id="bLives">❤️ Lives: <strong>3</strong></span>
+        <span class="badge" id="bLevel">Lv <strong>1</strong></span>
+      </div>
+      <hr>
+      <h3>Options</h3>
+      <div class="opt-row">
+        <label for="robotCount">Robots:</label>
+        <input id="robotCount" type="range" min="3" max="8" value="7">
+        <span id="robotCountVal" style="font-weight:800">7</span>
+      </div>
+      <div class="opt-row">
+        <label for="aiRoam">Roam more (scatter/wander):</label>
+        <input id="aiRoam" type="checkbox" checked>
+      </div>
+      <div class="opt-row">
+        <label for="speed">Player speed:</label>
+        <input id="speed" type="range" min="90" max="180" step="10" value="120">
+        <span id="speedVal" style="font-weight:800">120 ms</span>
+      </div>
+      <small>Changes apply on “Start / New Game”.</small>
+      <hr>
+      <h3>High Scores</h3>
+      <ul id="highscores" class="hs-list"></ul>
+      <small>Stored locally in your browser.</small>
+      <hr>
+      <h3>Controls</h3>
+      <ul>
+        <li><strong>Move:</strong> Arrow keys / WASD (turn buffer lets taps register at intersections)</li>
+        <li><strong>Goal:</strong> Collect all ✈️. Robots chase/roam—collision opens a quiz (2 tries). Correct = +1 ⭐. Fail twice = lose a life.</li>
+        <li><strong>Wrap‑around:</strong> Exit any edge to re‑enter opposite side.</li>
+      </ul>
+    </div>
+    <div class="toast" id="toast">+1 ✈️</div>
+  </div>
+
+  <!-- QUIZ MODAL -->
+  <div class="modal-backdrop" id="quizModal" aria-hidden="true" role="dialog" aria-label="Robot Quiz">
+    <div class="modal-card">
+      <div style="display:flex; align-items:center; gap:.5rem;">
+        <div style="font-size:1.5rem">🤖</div>
+        <h4 style="flex:1">Caught! Answer to continue</h4>
+        <button class="btn btn-danger" id="btnGiveUp">Give Up</button>
+      </div>
+      <div id="quizBody">
+        <div id="quizQuestion" style="font-weight:900; font-size:1.05rem; line-height:1.4"></div>
+        <div id="quizMedia" style="margin:.5rem 0 .25rem"></div>
+        <div id="quizChoices" style="display:grid; gap:.5rem;"></div>
+        <div id="quizExplain" class="explain" style="display:none"></div>
+        <div style="display:flex; gap:.5rem; justify-content:flex-end; margin-top:.5rem;">
+          <button class="btn btn-warning" id="btnRetry">Try Again (<span id="retryCount">2</span> left)</button>
+          <button class="btn btn-success" id="btnContinue">Continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- END MODAL -->
+  <div class="modal-backdrop" id="endModal" aria-hidden="true" role="dialog" aria-label="Game Over">
+    <div class="modal-card">
+      <h4>Level Clear!</h4>
+      <p><strong>Score:</strong> <span id="finalScore">0</span> (✈️ <span id="finalPlanes">0</span> + ⭐ <span id="finalBonus">0</span>)</p>
+      <div id="endMessage"></div>
+      <div style="display:flex; gap:.5rem; justify-content:flex-end; margin-top:.5rem;">
+        <button class="btn btn-primary" id="btnPlayAgain">Next Level</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME OVER MODAL -->
+  <div class="modal-backdrop" id="gameOverModal" aria-hidden="true" role="dialog" aria-label="Game Over">
+    <div class="modal-card">
+      <h4>Game Over</h4>
+      <p><strong>Final Score:</strong> <span id="goScore">0</span> (Lv <span id="goLevel">1</span>)</p>
+      <p>✈️ <span id="goPlanes">0</span> • ⭐ <span id="goBonus">0</span></p>
+      <div style="display:flex; gap:.5rem; justify-content:flex-end; margin-top:.5rem;">
+        <button class="btn btn-primary" id="btnRestart">Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="err" id="err"></div>
+
+</div>
+
+<script type="text/javascript">
+(function(){
+  'use strict';
+
+  var errBar = document.getElementById('err');
+  window.addEventListener('error', function(e){ if(!errBar) return; errBar.style.display='block'; errBar.textContent='Game script error: '+e.message; });
+
+  function ready(fn){ if(document.readyState!=='loading'){ fn(); } else { document.addEventListener('DOMContentLoaded', fn); } }
+  ready(init);
+
+  function init(){
+    function $(s, r){ return (r||document).querySelector(s); }
+    function $all(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); }
+
+    var canvas=$('#game'), ctx=canvas.getContext('2d'), stage=$('#stage');
+    var btnStart=$('#btnStart'), btnHelp=$('#btnHelp'), btnMute=$('#btnMute');
+    var toast=$('#toast'), hsList=$('#highscores');
+    var bPlanes=$('#bPlanes strong'), bBonus=$('#bBonus strong'), bLives=$('#bLives strong'), bLevel=$('#bLevel strong');
+    var rangeRobots=$('#robotCount'), robotCountVal=$('#robotCountVal');
+    var rangeSpeed=$('#speed'), speedVal=$('#speedVal');
+    var chkRoam=$('#aiRoam');
+
+    function forceStageSize(){
+      var w = stage.clientWidth || (stage.parentElement ? stage.parentElement.clientWidth : 960);
+      var h = Math.round(w * 9 / 16);
+      stage.style.height = h + 'px';
+      canvas.width = Math.floor(w);
+      canvas.height = Math.floor(h);
+    }
+    window.addEventListener('resize', forceStageSize);
+    window.addEventListener('load', forceStageSize);
+    setTimeout(forceStageSize, 0);
+
+    var settings={ robots: parseInt(rangeRobots.value,10)||7, roam:true, step: parseInt(rangeSpeed.value,10)||120 };
+    robotCountVal.textContent=String(settings.robots);
+    speedVal.textContent=settings.step+' ms';
+
+    rangeRobots.addEventListener('input', function(){ settings.robots=parseInt(rangeRobots.value,10); robotCountVal.textContent=String(settings.robots); });
+    rangeSpeed.addEventListener('input', function(){ settings.step=parseInt(rangeSpeed.value,10); speedVal.textContent=settings.step+' ms'; });
+    chkRoam.addEventListener('change', function(){ settings.roam=chkRoam.checked; });
+
+    var audioCtx=null, mute=false, audioReady=false;
+    function ensureAudio(){ if(audioReady) return; try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); audioReady=true; }catch(e){} }
+    function tone(f, d, type, g){
+      f = (typeof f==='number')?f:440; d = (typeof d==='number')?d:0.1; type = type || 'sine'; g = (typeof g==='number')?g:0.06;
+      if(mute||!audioReady||!audioCtx) return;
+      var o=audioCtx.createOscillator(), gain=audioCtx.createGain();
+      o.type=type; o.frequency.value=f; gain.gain.value=g; o.connect(gain).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+d);
+    }
+    var SFX={ pellet:function(){tone(1200,0.06,'triangle',0.05)}, bonus:function(){tone(880,0.08,'sine',0.05); setTimeout(function(){tone(1320,0.08,'triangle',0.05);},80)}, death:function(){tone(200,0.25,'sawtooth',0.09); setTimeout(function(){tone(120,0.3,'sawtooth',0.09);},220)}, win:function(){ [523,659,784,1047].forEach(function(f,i){ setTimeout(function(){ tone(f,0.14,'triangle',0.06); }, i*140); }); } };
+    btnMute.addEventListener('click', function(){ mute=!mute; btnMute.textContent='Sound: '+(mute?'Off':'On'); btnMute.setAttribute('aria-pressed', String(!mute)); });
+
+    function RI(n){ return Math.floor(Math.random()*n); }
+    function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=RI(i+1), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+
+    var state={ grid:[], cols:33, rows:25, tile:24, wrap:true,
+      player:{x:1,y:1,dir:[1,0],turnDir:[1,0],turnBuffer:0},
+      robots:[], pellets:[], pelletSet:{}, planes:0, bonus:0, level:1, lives:3,
+      running:false, quiz:false, explosion:null, effects:{invuln:0} };
+
+    function pelletAdd(x,y){ var key=x+','+y; if(!state.pelletSet[key]){ state.pelletSet[key]=1; state.pellets.push(key); } }
+    function pelletHas(x,y){ return !!state.pelletSet[x+','+y]; }
+    function pelletDel(x,y){ var k=x+','+y; if(state.pelletSet[k]){ delete state.pelletSet[k]; for(var i=0;i<state.pellets.length;i++){ if(state.pellets[i]===k){ state.pellets.splice(i,1); break; } } } }
+
+    function buildGrid(cols, rows){
+      var W=1, P=0;
+      var g=new Array(rows);
+      for(var y=0;y<rows;y++){ g[y]=new Array(cols); for(var x=0;x<cols;x++){ g[y][x]=W; } }
+      for(var y2=1;y2<rows-1;y2+=2){ for(var x2=1;x2<cols-1;x2++){ g[y2][x2]=P; } }
+      for(var x3=2;x3<cols-2;x3+=3){ for(var y3=1;y3<rows-1;y3++){ if(y3%2){ g[y3-1][x3]=P; g[y3+1][x3]=P; } } }
+      for(var x4=3;x4<cols-3;x4+=2){ if(Math.random()<0.55){ for(var y4=1;y4<rows-1;y4++){ g[y4][x4]=P; } } }
+      var midY=Math.floor(rows/2), midX=Math.floor(cols/2);
+      var ys=[midY-2, midY, midY+2], xs=[midX-2, midX, midX+2];
+      for(var i1=0;i1<ys.length;i1++){ var yy=ys[i1]; g[yy][1]=P; g[yy][cols-2]=P; }
+      for(var i2=0;i2<xs.length;i2++){ var xx=xs[i2]; g[1][xx]=P; g[rows-2][xx]=P; }
+      return g;
+    }
+
+    function resetLevel(){
+      var w = stage.clientWidth, h = stage.clientHeight;
+      if(!w || !h){ forceStageSize(); }
+      var ideal = Math.floor(Math.min(canvas.width/26, canvas.height/26));
+      state.cols = Math.max(25, ((ideal*1.1|0)|1));
+      state.rows = Math.max(19, ((ideal*0.9|0)|1));
+      state.grid = buildGrid(state.cols, state.rows);
+      state.tile = Math.floor(Math.min(canvas.width/state.cols, canvas.height/state.rows));
+
+      state.level=1; state.lives=3; state.bonus=0; state.planes=0;
+      state.player.x=1; state.player.y=1; state.player.dir=[1,0]; state.player.turnDir=[1,0]; state.player.turnBuffer=0;
+      state.effects.invuln = 12;
+
+      state.pellets=[]; state.pelletSet={};
+      for(var y=1;y<state.rows-1;y++){ for(var x=1;x<state.cols-1;x++){ if(state.grid[y][x]===0) pelletAdd(x,y); } }
+
+      spawnRobots(settings.robots);
+
+      state.running=true; state.quiz=false; state.explosion=null;
+      updateHUD();
+    }
+
+    function spawnRobots(count){
+      var colorPool=['#22d3ee','#f472b6','#fb923c','#a3e635','#f59e0b','#06b6d4','#8b5cf6','#10b981'];
+      state.robots.length=0;
+      var spots=[ [state.cols-2,1], [1,state.rows-2], [state.cols-2,state.rows-2], [Math.floor(state.cols/2),1], [1,Math.floor(state.rows/2)], [state.cols-2,Math.floor(state.rows/2)], [Math.floor(state.cols/2),state.rows-2], [Math.floor(state.cols/2),Math.floor(state.rows/2)] ];
+      for(var i=0;i<count;i++){
+        var s=spots[i%spots.length];
+        var color=colorPool[i%colorPool.length];
+        var speed=0.11 + (i%4)*0.015;
+        state.robots.push(makeRobot(color, s[0], s[1], speed, i));
+      }
+    }
+
+    function makeRobot(color,x,y,speed,idx){
+      var personalities=[
+        {agg:0.7, rnd:0.2, scatter:50, chase:70, wander:170},
+        {agg:0.6, rnd:0.25, scatter:40, chase:80, wander:160},
+        {agg:0.5, rnd:0.3, scatter:60, chase:70, wander:190},
+        {agg:0.8, rnd:0.15, scatter:45, chase:85, wander:150}
+      ];
+      var p=personalities[idx%personalities.length];
+      return {x:x,y:y,color:color,dir:[-1,0],speed:speed,accum:0, mode:'wander', timer: p.wander + RI(40), corner: cornerFor(idx), personality:p, lastDir:[-1,0]};
+    }
+    function cornerFor(i){
+      var corners=[ [1,1], [state.cols-2,1], [1,state.rows-2], [state.cols-2,state.rows-2] ];
+      return corners[i%corners.length];
+    }
+    function canMove(x,y){
+      if(state.wrap){
+        if(x<0) x=state.cols-1; if(x>=state.cols) x=0; if(y<0) y=state.rows-1; if(y>=state.rows) y=0;
+      }
+      return y>=0&&y<state.rows&&x>=0&&x<state.cols&&state.grid[y][x]===0;
+    }
+    function wrapCoord(x,y){
+      if(!state.wrap) return [x,y];
+      if(x<0) x=state.cols-1; if(x>=state.cols) x=0; if(y<0) y=state.rows-1; if(y>=state.rows) y=0;
+      return [x,y];
+    }
+
+    function parallax(){
+      var px=state.player.x/state.cols, py=state.player.y/state.rows;
+      $all('.layer').forEach(function(el){
+        var depth=parseFloat(el.getAttribute('data-depth')||'0.1');
+        var dx=(px-0.5)*depth*80; var dy=(py-0.5)*depth*30;
+        el.style.transform='translate('+dx+'px,'+dy+'px)';
+      });
+    }
+
+    window.addEventListener('keydown', function(e){
+      if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Spacebar','Space','w','a','s','d','W','A','S','D'].indexOf(e.key)>-1) e.preventDefault();
+      var p=state.player;
+      if(e.key==='ArrowUp'||e.key==='w'||e.key==='W'){ p.turnDir=[0,-1]; p.turnBuffer=8; }
+      if(e.key==='ArrowDown'||e.key==='s'||e.key==='S'){ p.turnDir=[0,1]; p.turnBuffer=8; }
+      if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A'){ p.turnDir=[-1,0]; p.turnBuffer=8; }
+      if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){ p.turnDir=[1,0]; p.turnBuffer=8; }
+    });
+
+    var last=0;
+    function gameLoop(ts){
+      try{
+        if(!state.running){ requestAnimationFrame(gameLoop); return; }
+        if(!last) last=ts; var dt=ts-last;
+        if(dt>settings.step && !state.quiz){ last=ts; tick(); }
+        draw(); requestAnimationFrame(gameLoop);
+      }catch(err){ if(errBar){ errBar.style.display='block'; errBar.textContent='Loop error: '+err.message; } }
+    }
+    requestAnimationFrame(gameLoop);
+
+    function tick(){ stepPlayer(); stepRobots(); parallax(); }
+
+    function stepPlayer(){
+      var p=state.player;
+      if(p.turnBuffer>0 && canMove(p.x+p.turnDir[0], p.y+p.turnDir[1])){ p.dir=[p.turnDir[0],p.turnDir[1]]; p.turnBuffer=0; } else if(p.turnBuffer>0){ p.turnBuffer--; }
+      var nx=p.x+p.dir[0], ny=p.y+p.dir[1]; var c=wrapCoord(nx,ny); nx=c[0]; ny=c[1];
+      if(canMove(nx,ny)){ p.x=nx; p.y=ny; onEnter(nx,ny); }
+      if(p.turnBuffer>0 && canMove(p.x+p.turnDir[0], p.y+p.turnDir[1])){ p.dir=[p.turnDir[0],p.turnDir[1]]; p.turnBuffer=0; } else if(p.turnBuffer>0){ p.turnBuffer--; }
+    }
+
+    function onEnter(x,y){
+      if(pelletHas(x,y)){ pelletDel(x,y); state.planes++; SFX.pellet(); showToast('+1 ✈️'); updateHUD(); checkWin(); }
+      for(var i=0;i<state.robots.length;i++){ var r=state.robots[i]; if(r.x===x && r.y===y){ if(state.effects.invuln>0){ return; } triggerQuiz(); break; } }
+    }
+
+    function stepRobots(){
+      for(var i=0;i<state.robots.length;i++){
+        var r=state.robots[i];
+        r.timer--;
+        if(r.timer<=0){
+          if(!chkRoam.checked){ r.mode='chase'; r.timer=100+RI(60); }
+          else{
+            if(r.mode==='wander'){ r.mode='chase'; }
+            else if(r.mode==='chase'){ r.mode = (Math.random()<0.25) ? 'scatter' : 'wander'; }
+            else { r.mode='wander'; }
+            var p=r.personality;
+            r.timer = (r.mode==='scatter')? p.scatter + RI(25) : (r.mode==='wander'? p.wander + RI(60) : p.chase + RI(40));
+          }
+        }
+        r.accum += r.speed;
+        if(r.accum < 1) continue;
+        r.accum = 0;
+        var move = nextRobotMove(r);
+        var nx=r.x+move[0], ny=r.y+move[1]; var c=wrapCoord(nx,ny); nx=c[0]; ny=c[1];
+        if(canMove(nx,ny)){ r.x=nx; r.y=ny; r.lastDir=move; }
+        if(r.x===state.player.x && r.y===state.player.y){
+          if(state.effects.invuln>0){ } else { triggerQuiz(); }
+        }
+      }
+      if(state.effects.invuln>0) state.effects.invuln--;
+    }
+
+    function nextRobotMove(r){
+      var dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+      var options=dirs.filter(function(d){ return canMove(r.x+d[0], r.y+d[1]); });
+      if(options.length===0) return [0,0];
+      var notReverse = options.filter(function(d){ return !(d[0]===-r.lastDir[0] && d[1]===-r.lastDir[1]); });
+      var opts = notReverse.length? notReverse : options;
+      if(r.mode==='wander'){
+        if(Math.random()<0.3){ var target = randomPellet(); if(target){ return greedyStepTowards(r.x,r.y,target[0],target[1],opts); } }
+        return opts[RI(opts.length)];
+      }
+      if(r.mode==='scatter'){ var c=r.corner; return greedyStepTowards(r.x,r.y,c[0],c[1],opts); }
+      if(Math.random()<0.25){ return opts[RI(opts.length)]; }
+      return greedyStepTowards(r.x,r.y,state.player.x,state.player.y,opts);
+    }
+
+    function greedyStepTowards(sx,sy,tx,ty,options){
+      var best=options[0], bestd=Infinity;
+      for(var i=0;i<options.length;i++){
+        var d=options[i];
+        var nx=sx+d[0], ny=sy+d[1]; var c=wrapCoord(nx,ny); nx=c[0]; ny=c[1];
+        var dd=manhattan(nx,ny,tx,ty);
+        if(dd<bestd){ best=d; bestd=dd; }
+      }
+      return best;
+    }
+    function manhattan(ax,ay,bx,by){
+      var dx=Math.min(Math.abs(ax-bx), state.cols - Math.abs(ax-bx));
+      var dy=Math.min(Math.abs(ay-by), state.rows - Math.abs(ay-by));
+      return dx+dy;
+    }
+    function randomPellet(){
+      var n=state.pellets.length; if(n===0) return null;
+      var idx = RI(n);
+      var s = state.pellets[idx].split(',');
+      return [parseInt(s[0],10), parseInt(s[1],10)];
+    }
+
+    function draw(){
+      var t=state.tile; ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle='#1f2937'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      for(var y=0;y<state.rows;y++){
+        for(var x=0;x<state.cols;x++){
+          var X=x*t, Y=y*t;
+          if(state.grid[y][x]===1){ ctx.fillStyle='#0c3b2e'; ctx.fillRect(X,Y,t,t); ctx.fillStyle='#11624c'; roundRect(X+2,Y+2,t-4,t-4,6,true,false); }
+          else { ctx.fillStyle='#0b1020'; ctx.fillRect(X,Y,t,t); ctx.fillStyle='rgba(255,255,255,.05)'; ctx.fillRect(X,Y,t,2); }
+        }
+      }
+      ctx.fillStyle='#fbbf24';
+      for(var i=0;i<state.pellets.length;i++){ var s=state.pellets[i].split(','); var px=parseInt(s[0],10), py=parseInt(s[1],10); ctx.beginPath(); ctx.arc(px*t+t/2, py*t+t/2, Math.max(2, t*0.12), 0, Math.PI*2); ctx.fill(); }
+      for(var r=0;r<state.robots.length;r++){ drawRobot(state.robots[r]); }
+      drawPlayer(state.player.x, state.player.y);
+      if(state.explosion){ drawExplosion(); }
+    }
+
+    function drawPlayer(x,y){
+      var t=state.tile, X=x*t, Y=y*t;
+      var eye = Math.max(2, t*0.08);
+      ctx.save(); ctx.translate(X+t/2, Y+t/2);
+      ctx.fillStyle='#f87171'; circle(0,0,t*0.36,true);
+      ctx.fillStyle='#fff'; circle(-t*0.2,-t*0.12,eye,true); circle(t*0.2,-t*0.12,eye,true);
+      ctx.fillStyle='#111827'; circle(-t*0.2,-t*0.12,eye*0.5,true); circle(t*0.2,-t*0.12,eye*0.5,true);
+      ctx.fillStyle='#ef4444'; ctx.beginPath(); ctx.moveTo(-4,8); ctx.lineTo(0,12); ctx.lineTo(4,8); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    function drawRobot(r){
+      var t=state.tile, X=r.x*t, Y=r.y*t;
+      ctx.fillStyle=r.color; roundRect(X+4,Y+4,t-8,t-8,6,true,false);
+      ctx.fillStyle='#111827'; ctx.fillRect(X+6,Y+6,6,6); ctx.fillRect(X+t-12,Y+6,6,6);
+      var barH = Math.max(2, t*0.06);
+      ctx.fillStyle = (r.mode==='chase')? '#ef4444' : (r.mode==='wander'? '#10b981' : '#3b82f6');
+      ctx.fillRect(X+4, Y+t-6, t-8, barH);
+    }
+    function circle(x,y,r,fill){ ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); fill?ctx.fill():ctx.stroke(); }
+    function roundRect(x,y,w,h,r,fill,stroke){ if(w<0) w=-w; if(h<0) h=-h; ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); if(fill) ctx.fill(); if(stroke) ctx.stroke(); }
+
+    var toastTimer=null; function showToast(msg){ toast.textContent=msg; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(function(){ toast.classList.remove('show'); },1000); }
+
+    function updateHUD(){ bPlanes.textContent=state.planes; bBonus.textContent=state.bonus; bLives.textContent=state.lives; bLevel.textContent=state.level; }
+
+    function checkWin(){ if(state.pellets.length===0){ endLevel(); } }
+    function endLevel(){ state.running=false; SFX.win(); var score=state.planes+state.bonus; document.getElementById('finalScore').textContent=score; document.getElementById('finalPlanes').textContent=state.planes; document.getElementById('finalBonus').textContent=state.bonus; endShow(); var list=readHS(); list.unshift({t:Date.now(), sc:score}); list.sort(function(a,b){ return b.sc-a.sc; }); writeHS(list.slice(0,20)); renderHS(); }
+    var endModalEl=document.getElementById('endModal'); function endShow(){ endModalEl.classList.add('show'); endModalEl.setAttribute('aria-hidden','false'); } function endClose(){ endModalEl.classList.remove('show'); endModalEl.setAttribute('aria-hidden','true'); } document.getElementById('btnPlayAgain').addEventListener('click', function(){ endClose(); state.level++; resetLevel(); state.running=true; });
+
+    function readHS(){ try{ return JSON.parse(localStorage.getItem('craap_pac_single_hs')||'[]'); }catch(e){ return []; } }
+    function writeHS(v){ localStorage.setItem('craap_pac_single_hs', JSON.stringify(v)); }
+    function renderHS(){ var list=readHS().slice(0,8); hsList.innerHTML=''; if(!list.length){ hsList.innerHTML='<li><em>No scores yet—be the first!</em></li>'; return; } list.forEach(function(s){ var li=document.createElement('li'); li.innerHTML='<span>'+new Date(s.t).toLocaleDateString()+' '+new Date(s.t).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</span><span>'+s.sc+'</span>'; hsList.appendChild(li); }); }
+
+    var quizModal=document.getElementById('quizModal'), quizQ=document.getElementById('quizQuestion'), quizMedia=document.getElementById('quizMedia'), quizChoices=document.getElementById('quizChoices'), quizExplain=document.getElementById('quizExplain');
+    var retryCountEl=document.getElementById('retryCount'), btnRetry=document.getElementById('btnRetry'), btnContinue=document.getElementById('btnContinue'), btnGiveUp=document.getElementById('btnGiveUp');
+    var quizRetries=2, currentQ=null;
+
+    var SVG={
+      truncatedAxis: function(){ return '<svg viewBox=\"0 0 240 140\" width=\"100%\" height=\"120\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"240\" height=\"140\" fill=\"#f8fafc\"/><text x=\"6\" y=\"14\" font-size=\"10\" fill=\"#334155\">Y-axis starts at 95</text><line x1=\"40\" y1=\"20\" x2=\"40\" y2=\"120\" stroke=\"#475569\"/><line x1=\"40\" y1=\"120\" x2=\"220\" y2=\"120\" stroke=\"#475569\"/><text x=\"28\" y=\"28\" font-size=\"9\" fill=\"#64748b\">100</text><text x=\"28\" y=\"60\" font-size=\"9\" fill=\"#64748b\">97</text><text x=\"28\" y=\"120\" font-size=\"9\" fill=\"#64748b\">95</text><rect x=\"60\" y=\"55\" width=\"30\" height=\"65\" fill=\"#60a5fa\"/><rect x=\"110\" y=\"50\" width=\"30\" height=\"70\" fill=\"#f87171\"/><rect x=\"160\" y=\"52\" width=\"30\" height=\"68\" fill=\"#34d399\"/><text x=\"62\" y=\"135\" font-size=\"9\" fill=\"#334155\">A</text><text x=\"112\" y=\"135\" font-size=\"9\" fill=\"#334155\">B</text><text x=\"162\" y=\"135\" font-size=\"9\" fill=\"#334155\">C</text></svg>';},
+      astroturf: function(){ return '<svg viewBox=\"0 0 260 120\" width=\"100%\" height=\"120\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"260\" height=\"120\" fill=\"#f8fafc\"/><circle cx=\"40\" cy=\"60\" r=\"16\" fill=\"#94a3b8\"/><text x=\"16\" y=\"16\" font-size=\"10\" fill=\"#0f172a\">Sponsor</text><line x1=\"56\" y1=\"60\" x2=\"110\" y2=\"30\" stroke=\"#94a3b8\"/><line x1=\"56\" y1=\"60\" x2=\"110\" y2=\"60\" stroke=\"#94a3b8\"/><line x1=\"56\" y1=\"60\" x2=\"110\" y2=\"90\" stroke=\"#94a3b8\"/><circle cx=\"120\" cy=\"30\" r=\"10\" fill=\"#86efac\"/><circle cx=\"120\" cy=\"60\" r=\"10\" fill=\"#86efac\"/><circle cx=\"120\" cy=\"90\" r=\"10\" fill=\"#86efac\"/><line x1=\"130\" y1=\"30\" x2=\"200\" y2=\"20\" stroke=\"#86efac\"/><line x1=\"130\" y1=\"60\" x2=\"200\" y2=\"60\" stroke=\"#86efac\"/><line x1=\"130\" y1=\"90\" x2=\"200\" y2=\"100\" stroke=\"#86efac\"/><circle cx=\"210\" cy=\"20\" r=\"8\" fill=\"#60a5fa\"/><circle cx=\"210\" cy=\"60\" r=\"8\" fill=\"#60a5fa\"/><circle cx=\"210\" cy=\"100\" r=\"8\" fill=\"#60a5fa\"/><text x=\"156\" y=\"15\" font-size=\"9\" fill=\"#0f172a\">\\'Grassroots\\' pages</text></svg>';},
+      deepfake: function(){ return '<svg viewBox=\"0 0 240 120\" width=\"100%\" height=\"120\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"240\" height=\"120\" fill=\"#f8fafc\"/><rect x=\"20\" y=\"20\" width=\"70\" height=\"50\" rx=\"6\" fill=\"#e2e8f0\"/><circle cx=\"55\" cy=\"45\" r=\"16\" fill=\"#93c5fd\"/><rect x=\"150\" y=\"20\" width=\"70\" height=\"50\" rx=\"6\" fill=\"#e2e8f0\"/><circle cx=\"185\" cy=\"45\" r=\"16\" fill=\"#fda4af\"/><defs><marker id=\"ar\" markerWidth=\"6\" markerHeight=\"6\" refX=\"5\" refY=\"3\" orient=\"auto\"><path d=\"M0,0 L0,6 L6,3 z\" fill=\"#334155\"/></marker></defs><path d=\"M100 45h40\" stroke=\"#334155\" stroke-width=\"2\" marker-end=\"url(#ar)\"/><text x=\"20\" y=\"90\" font-size=\"10\" fill=\"#334155\">Face/voice swap</text></svg>';},
+      botnet: function(){ return '<svg viewBox=\"0 0 260 120\" width=\"100%\" height=\"120\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"260\" height=\"120\" fill=\"#f8fafc\"/><circle cx=\"40\" cy=\"60\" r=\"14\" fill=\"#fca5a5\"/><text x=\"15\" y=\"18\" font-size=\"10\" fill=\"#0f172a\">Seed</text><line x1=\"54\" y1=\"60\" x2=\"100\" y2=\"30\" stroke=\"#94a3b8\"/><line x1=\"54\" y1=\"60\" x2=\"100\" y2=\"60\" stroke=\"#94a3b8\"/><line x1=\"54\" y1=\"60\" x2=\"100\" y2=\"90\" stroke=\"#94a3b8\"/><g fill=\"#a5b4fc\"><circle cx=\"110\" cy=\"30\" r=\"9\"/><circle cx=\"110\" cy=\"60\" r=\"9\"/><circle cx=\"110\" cy=\"90\" r=\"9\"/></g><g stroke=\"#a5b4fc\"><line x1=\"119\" y1=\"30\" x2=\"200\" y2=\"20\"/><line x1=\"119\" y1=\"60\" x2=\"200\" y2=\"60\"/><line x1=\"119\" y1=\"90\" x2=\"200\" y2=\"100\"/></g><g fill=\"#60a5fa\"><circle cx=\"210\" cy=\"20\" r=\"7\"/><circle cx=\"210\" cy=\"60\" r=\"7\"/><circle cx=\"210\" cy=\"100\" r=\"7\"/></g><text x=\"150\" y=\"15\" font-size=\"9\" fill=\"#0f172a\">Burst within seconds</text></svg>';},
+      falsebalance: function(){ return '<svg viewBox=\"0 0 260 120\" width=\"100%\" height=\"120\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"260\" height=\"120\" fill=\"#f8fafc\"/><rect x=\"120\" y=\"20\" width=\"4\" height=\"70\" fill=\"#64748b\"/><rect x=\"80\" y=\"35\" width=\"84\" height=\"4\" fill=\"#64748b\"/><circle cx=\"86\" cy=\"80\" r=\"16\" fill=\"#60a5fa\"/><circle cx=\"160\" cy=\"60\" r=\"10\" fill=\"#f87171\"/><text x=\"62\" y=\"102\" font-size=\"10\" fill=\"#0f172a\">Consensus</text><text x=\"144\" y=\"80\" font-size=\"10\" fill=\"#0f172a\">Outlier</text></svg>';},
+      reverse: function(){ return '<svg viewBox=\"0 0 240 120\" width=\"100%\" height=\"120\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"240\" height=\"120\" fill=\"#f8fafc\"/><rect x=\"20\" y=\"20\" width=\"160\" height=\"70\" rx=\"6\" fill=\"#e2e8f0\"/><circle cx=\"60\" cy=\"55\" r=\"20\" fill=\"#c7d2fe\"/><rect x=\"95\" y=\"35\" width=\"70\" height=\"10\" rx=\"3\" fill=\"#94a3b8\"/><rect x=\"95\" y=\"55\" width=\"90\" height=\"10\" rx=\"3\" fill=\"#a1a1aa\"/><circle cx=\"200\" cy=\"85\" r=\"20\" fill=\"#34d399\"/><line x1=\"180\" y1=\"65\" x2=\"194\" y2=\"79\" stroke=\"#334155\" stroke-width=\"3\"/></svg>';}
+    };
+
+    var QUESTIONS=(function(){ var qs=[
+      { q:"Which term best describes false information shared without intent to deceive?", choices:["Misinformation","Disinformation","Propaganda","Conspiracy theory"], correct:0, explain:"Misinformation = false but shared without intent; disinformation = false with intent to deceive; propaganda = persuasive communication often selective or misleading." },
+      { q:"Disinformation differs from misinformation primarily by what?", choices:["Its format is usually video","It spreads faster","The intent to mislead","It uses statistics"], correct:2, explain:"Intent is the key: disinformation is crafted/spread to mislead on purpose." },
+      { q:"Which is NOT a CRAAP criterion?", choices:["Currency","Relevance","Authority","Aesthetics"], correct:3, explain:"CRAAP stands for Currency, Relevance, Authority, Accuracy, Purpose." },
+      { q:"A news program invites a climate scientist and a non-expert skeptic for 'both sides'. What bias is this?", choices:["Cherry-picking","False balance","Ad hominem","Appeal to nature"], correct:1, explain:"False balance gives an outlier view equal weight to a well-supported consensus.", img:SVG.falsebalance() },
+      { q:"This chart makes small differences look huge by starting the y-axis at 95. What’s the problem?", choices:["Too many categories","Truncated axis exaggeration","Missing legend","Wrong units"], correct:1, explain:"Starting the axis high visually magnifies tiny differences — a classic misleading viz.", img:SVG.truncatedAxis() },
+      { q:"A viral video shows a politician saying something outrageous, but lip-sync looks slightly off. First step?", choices:["Share before it’s removed","Reverse image/video search","Check comments","Ask a friend"], correct:1, explain:"Use reverse image/video search to check provenance; deepfakes often leave artifacts.", img:SVG.deepfake() },
+      { q:"A 'grassroots' page suddenly appears with slick graphics and ad budget. Likely risk?", choices:["Astroturfing","Satire","Citizen journalism","Crowdsourcing"], correct:0, explain:"Astroturfing = orchestrated campaign designed to look grassroots; check funding/about pages.", img:SVG.astroturf() },
+      { q:"You see 300 identical posts within minutes boosting a product. Signal of…", choices:["Organic virality","Coordinated bots","A/B testing","Shadowbanning"], correct:1, explain:"Synchronized timing/text across many accounts suggests a botnet.", img:SVG.botnet() },
+      { q:"A site mimics a major newspaper’s logo with a slightly different URL and sensational headlines. This is…", choices:["Satire","Imposter content","Parody","Paywalled journalism"], correct:1, explain:"Imposter content imitates legitimate brands to borrow credibility." },
+      { q:"Which is a higher level of evidence?", choices:["Meta-analysis/systematic review","Single case report","Press release","Blog post"], correct:0, explain:"Syntheses (systematic reviews/meta-analyses) sit near the top of evidence hierarchies." },
+      { q:"A claim links to a PDF with charts but no methods section. Which CRAAP element is weak?", choices:["Currency","Relevance","Accuracy","Purpose"], correct:2, explain:"Without methods or transparent data, accuracy/verifiability is questionable." },
+      { q:"A company funds doubt‑casting papers to delay regulation. Which tactic from the Disinformation Playbook is this?", choices:["The Fake","The Blitz","The Fix","The Screen"], correct:0, explain:"‘The Fake’: promote counterfeit science to question consensus." },
+      { q:"Flooding agencies with lawsuits and attacks to intimidate scientists is…", choices:["The Blitz","The Fix","The Diversion","The Screen"], correct:0, explain:"‘The Blitz’: harass/chill critics through legal and PR attacks." },
+      { q:"Placing allies on oversight boards to skew decisions is…", choices:["The Diversion","The Fix","The Screen","Astroturf"], correct:1, explain:"‘The Fix’: capture decision‑making spaces." },
+      { q:"Funding front groups to create a veneer of support is…", choices:["The Screen","The Diversion","The Blitz","The Fix"], correct:0, explain:"‘The Screen’: create a false appearance of support via shell groups and PR." },
+      { q:"“No studies show harm, therefore it’s safe.” Problem?", choices:["Cherry-picking","Argument from ignorance","Post hoc","Appeal to emotion"], correct:1, explain:"Absence of evidence ≠ evidence of absence." },
+      { q:"A thread focuses on one outlier study and ignores 20 others. This is…", choices:["Hedging","Cherry‑picking","Moving the goalposts","Tu quoque"], correct:1, explain:"Cherry‑picking selects evidence that fits a pre‑chosen conclusion." },
+      { q:"Best first step to vet a suspicious breaking news image?", choices:["Reverse image search + look for earlier dates","Zoom and look at pixels only","Trust the watermark","Check if it ‘feels’ real"], correct:0, explain:"Use reverse search to find original context/time and compare versions.", img:SVG.reverse() },
+      { q:"The URL ends with .co and mimics a known outlet. You should…", choices:["Close it immediately","Check About/Contact, masthead, and WHOIS","Email the author","Trust Google ranking"], correct:1, explain:"Verify ownership, editorial team, and contact footprint to spot imposters." },
+      { q:"An alarming claim cites 'a study' but doesn’t link it. Best move?", choices:["Assume it’s paywalled","Search for the study title/DOI","Ask in comments","Trust a screenshot"], correct:1, explain:"Locate the actual study; read methods and limitations." },
+      { q:"Which of these best fits 'fake news' as defined in research?", choices:["Satirical articles only","Any mistake in journalism","Intentionally and verifiably false news content designed to mislead","Opinion pieces"], correct:2, explain:"Research definitions emphasize intentional deception in news-like formats." },
+      { q:"Post‑truth culture is characterized by…", choices:["Prioritizing identity and feelings over evidence","Only using statistics","A ban on sarcasm","Perfect objectivity"], correct:0, explain:"Post‑truth elevates identity/feelings over empirical facts." },
+      { q:"Digital propaganda primarily refers to…", choices:["Educational infographics","Attempts to manipulate public opinion via social platforms/ICTs","Only government press releases","Peer‑reviewed research"], correct:1, explain:"Digital propaganda leverages social media/ICTs to sway opinion." },
+      { q:"Conspiracy theories commonly feature…", choices:["Falsifiability and openness to new evidence","Self‑sealing logic that explains away disconfirming facts","Strict reliance on primary data","Peer review"], correct:1, explain:"Self‑sealing explanations make conspiracies resistant to falsification." },
+      { q:"A meme crops out a headline’s correction. Tactic?", choices:["Hedging","Context stripping","Satire","Equivocation"], correct:1, explain:"Crops remove corrective context to mislead." },
+      { q:"Which habit most reduces being fooled online?", choices:["Rely on one trusted source","Pause and lateral read across multiple sources","Only use video content","Check comments"], correct:1, explain:"Lateral reading across diverse, credible sources helps." },
+      { q:"Malinformation is best described as…", choices:["Satire mistaken as news","True information shared to cause harm (e.g., doxxing)","Typos in headlines","Benign gossip"], correct:1, explain:"Malinformation uses true content weaponized to harm." },
+      { q:"Which CRAAP element checks if a source clearly states authors and qualifications?", choices:["Currency","Relevance","Authority","Purpose"], correct:2, explain:"Authority asks who wrote it and their credentials." },
+      { q:"A sudden spike of identical comments praising a brand is most likely…", choices:["Organic fandom","Coordinated inauthentic behavior","Journalistic outreach","A/B testing"], correct:1, explain:"Synchronous repetition indicates coordination/bots." },
+      { q:"A 'testimonials' ad where influencers endorse a product for credibility is a classic example of…", choices:["Scientific consensus","Testimonial propaganda technique","Primary research","Ethnography"], correct:1, explain:"Testimonial propaganda borrows credibility from endorsers." },
+      { q:"Which step is part of the SIFT/lateral reading approach?", choices:["Share first","Investigate the source","Ignore the URL","Accept screenshots"], correct:1, explain:"Investigate the source, then find better coverage and trace to the original." },
+      { q:"Which is a clue of 'imposter content'?", choices:["Secure HTTPS","A clearly listed editorial board","A URL that closely imitates a known outlet (typosquatting)","Accessible corrections policy"], correct:2, explain:"Look‑alike URLs are common in imposters." },
+      { q:"A deepfake detection red flag is…", choices:["Perfect lip‑sync","Irregular blinking & artifacts","Always vertical video","Presence of subtitles"], correct:1, explain:"Blinking artifacts and uncanny syncing are common tells.", img:SVG.deepfake() },
+      { q:"A lobby group funds a 'think tank' that publishes friendly reports. This most resembles…", choices:["Citizen science","The Screen (buy credibility)","Peer review","Replication"], correct:1, explain:"Buying credibility through front groups aligns with 'The Screen' tactic." },
+      { q:"On a source that seems credible, what should you still do?", choices:["Assume accuracy","Skim only the abstract","Check methods, data, and look for independent replication","Ignore conflicts of interest"], correct:2, explain:"Accuracy depends on transparent, reproducible methods." },
+      { q:"A rumor claims a recall on campus; reverse image search shows the photo from 2016 abroad. This is…", choices:["Fresh reporting","Misinformation via miscaptioning/context collapse","Provenance check","Investigative journalism"], correct:1, explain:"Old photo reused as new is decontextualization." },
+      { q:"'Absence of evidence is evidence of absence' is which fallacy?", choices:["Appeal to nature","Argument from ignorance","Slippery slope","Straw man"], correct:1, explain:"Lack of evidence alone doesn’t prove falsity/truth." },
+      { q:"Which description best fits propaganda?", choices:["Neutral info sharing","Deliberate, systematic attempts to shape perception to achieve a response","Unintended rumors","Peer‑reviewed research"], correct:1, explain:"A standard definition emphasizes deliberate, systematic persuasion." },
+      { q:"Which is the best practice when a claim references 'a study' with a screenshot only?", choices:["Accept the screenshot","Find the DOI/title and read the study","Assume paywall makes it credible","Ask your group chat"], correct:1, explain:"Trace to the original and assess methods." },
+      { q:"A post that says, “No experts can explain X, therefore Y is true” illustrates…", choices:["Burden of proof reversal","Causation vs correlation","Ad hominem","Base‑rate neglect"], correct:0, explain:"It shifts the burden of proof without evidence." },
+      { q:"'The Diversion' play in the Disinformation Playbook is…", choices:["Capture oversight boards","Harass critics","Buy credibility via front groups","Flood the zone with doubt and distractions"], correct:3, explain:"The Diversion manufactures uncertainty and distracts from evidence." },
+      { q:"When evaluating Currency in CRAAP, you primarily check…", choices:["Whether the site looks modern","Publication/last updated date and relevance to topic","If the author is famous","If it has images"], correct:1, explain:"Currency is about timeliness for your purpose." },
+      { q:"Which statement about conspiracy theories is most accurate?", choices:["They invite disconfirming evidence","They rely on sealed logic and special pleading","They are peer‑reviewed","They prioritize the best explanation"], correct:1, explain:"Self‑sealing narratives maintain belief despite evidence." },
+      { q:"'Greenwashing' is best described as…", choices:["Transparent lifecycle analysis","Overstating environmental benefits to mislead","Open-source sustainability data","A government labeling program"], correct:1, explain:"A deception tactic to appear eco‑friendly without substantiation." },
+      { q:"Which tool/workflow is appropriate for debunking a viral video?", choices:["Lateral reading + reverse video search + find earlier uploads","Screenshot and repost","Only read comments","Ask the uploader"], correct:0, explain:"Verified workflow helps recover context and origin." },
+      { q:"Which of these is a signal of coordinated campaign timing?", choices:["Random posting intervals","Repeated identical phrasing at tight intervals","Typos","Use of emojis"], correct:1, explain:"Synchronized text bursts = coordination/bots." },
+      { q:"If a site uses a .co domain to imitate a .com of a news outlet, evaluation should focus on…", choices:["Visuals only","About page, masthead, funding, and contact footprint","Number of ads","Comment count"], correct:1, explain:"Ownership and editorial transparency are key checks." },
+      { q:"Which of the following is NOT a step of lateral reading/SIFT?", choices:["Stop","Investigate the source","Find better coverage","Follow the money"], correct:3, explain:"Core SIFT steps: Stop, Investigate, Find better coverage, Trace to the original. 'Follow the money' can help but isn't a core step." },
+      { q:"An influencer shares a detox cure citing 'studies' but links to no research. Best response?", choices:["Accept anecdote","Look for peer‑reviewed evidence and clinical consensus","Buy the product to test","Trust comments"], correct:1, explain:"Seek peer‑reviewed evidence and consensus; beware health misinformation." },
+      { q:"Which clue suggests a deepfake audio clip?", choices:["Clean room noise profile","Imperfect prosody, odd breaths, mismatched cadence","Recorded on a phone","Short duration"], correct:1, explain:"Synthetic voices often stumble on breath/cadence details.", img:SVG.deepfake() },
+      { q:"A polished 'citizen group' launches days before a vote with heavy ads. Risk?", choices:["Organic mobilization","Astroturfing/front group","Peer review","Community science"], correct:1, explain:"Sudden, well‑funded campaigns may mask organized interests.", img:SVG.astroturf() },
+      { q:"“If masks work, why do doctors still get sick?” is an example of…", choices:["Straw man & false equivalence","Sound methodology","Accurate causal reasoning","Meta‑analysis"], correct:0, explain:"It misrepresents protective effect sizes and context." },
+      { q:"When tracing an image, which signal often reveals manipulation?", choices:["EXIF matches context","Lighting/shadows inconsistent with scene","Alt text provided","Landscape orientation"], correct:1, explain:"Shadow/lighting mismatches can expose edits." }
+    ]; return shuffle(qs); })();
+
+    function triggerQuiz(){ if(state.quiz) return; state.quiz=true; quizRetries=2; var q=QUESTIONS[RI(QUESTIONS.length)]; currentQ=q; quizQ.textContent=q.q; quizMedia.innerHTML=q.img||''; quizChoices.innerHTML=''; q.choices.forEach(function(c,i){ var b=document.createElement('button'); b.className='choice'; b.textContent=c; b.addEventListener('click', function(){ answer(i); }); quizChoices.appendChild(b); }); quizExplain.style.display='none'; quizExplain.textContent=''; retryCountEl.textContent=quizRetries; btnRetry.disabled=true; btnContinue.disabled=true; quizShow(); }
+    function answer(i){ if(!currentQ) return; var ok=(i===currentQ.correct); if(ok){ SFX.bonus(); quizExplain.textContent='Correct! '+currentQ.explain; quizExplain.style.display='block'; state.bonus++; updateHUD(); btnContinue.disabled=false; btnRetry.disabled=true; } else { SFX.death(); quizExplain.textContent='Nope. You have '+quizRetries+' more chance(s).'; quizExplain.style.display='block'; if(quizRetries>0){ btnRetry.disabled=false; } else { btnRetry.disabled=true; btnContinue.disabled=true; loseLife('Out of chances! '+currentQ.explain); } quizRetries--; retryCountEl.textContent=Math.max(0,quizRetries); } }
+    function quizShow(){ quizModal.classList.add('show'); quizModal.setAttribute('aria-hidden','false'); }
+    function quizClose(){ quizModal.classList.remove('show'); quizModal.setAttribute('aria-hidden','true'); }
+    btnRetry.addEventListener('click', function(){ quizExplain.style.display='none'; btnRetry.disabled=true; });
+    btnContinue.addEventListener('click', function(){ quizClose(); state.quiz=false; });
+    btnGiveUp.addEventListener('click', function(){ loseLife('Gave up!'); });
+
+    function loseLife(msg){
+      quizClose();
+      state.running=false;
+      startExplosion(state.player.x, state.player.y);
+      setTimeout(function(){
+        state.lives--; updateHUD();
+        if(state.lives<=0){ return gameOver(); }
+        state.player.x=1; state.player.y=1; state.player.dir=[1,0]; state.player.turnDir=[1,0]; state.player.turnBuffer=0; state.effects.invuln=14;
+        state.running=true; state.quiz=false;
+      }, 900);
+    }
+
+    function gameOver(){
+      var score = state.planes + state.bonus;
+      document.getElementById('goScore').textContent = score;
+      document.getElementById('goLevel').textContent = state.level;
+      document.getElementById('goPlanes').textContent = state.planes;
+      document.getElementById('goBonus').textContent = state.bonus;
+      var list=readHS(); list.unshift({t:Date.now(), sc:score}); list.sort(function(a,b){ return b.sc-a.sc; }); writeHS(list.slice(0,20)); renderHS();
+      document.getElementById('gameOverModal').classList.add('show'); document.getElementById('gameOverModal').setAttribute('aria-hidden','false');
+    }
+    document.getElementById('btnRestart').addEventListener('click', function(){ document.getElementById('gameOverModal').classList.remove('show'); document.getElementById('gameOverModal').setAttribute('aria-hidden','true'); resetLevel(); state.running=true; });
+
+    function startExplosion(x,y){
+      var parts=[]; var t=state.tile, cx=x*t+t/2, cy=y*t+t/2;
+      for(var i=0;i<30;i++){ parts.push({x:cx, y:cy, vx:(Math.random()*2-1)*3, vy:(Math.random()*2-1)*3, life:RI(20)+10}); }
+      state.explosion=parts;
+    }
+    function drawExplosion(){ var p=state.explosion; if(!p) return; for(var i=0;i<p.length;i++){ var s=p[i]; ctx.fillStyle='rgba(255, 99, 132, .8)'; ctx.beginPath(); ctx.arc(s.x, s.y, 3, 0, Math.PI*2); ctx.fill(); s.x+=s.vx; s.y+=s.vy; s.vy+=0.05; s.life--; } state.explosion = p.filter(function(s){ return s.life>0; }); }
+
+    btnStart.addEventListener('click', function(){ try{ ensureAudio(); quizClose(); endClose(); document.getElementById('gameOverModal').classList.remove('show'); resetLevel(); }catch(e){ if(errBar){ errBar.style.display='block'; errBar.textContent='Start error: '+e.message; } } });
+    btnHelp.addEventListener('click', function(){ alert("Single‑file build: upload this as index.html to GitHub Pages (root). If embedding elsewhere, use an iframe with allow-scripts."); });
+
+    renderHS(); forceStageSize(); resetLevel();
+  }
+})();
+</script>
+</body>
+</html>
