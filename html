@@ -467,6 +467,11 @@
   const modalDesc = $("#modal-desc");
   const modalClose = $("#modal-close");
   let lastFocus=null;
+
+  // Timer pause flag (patch)
+  let timerId=null;
+  let pausedForModal=false;
+
   function openModal(title, html){
     lastFocus = document.activeElement;
     modalTitle.textContent = title;
@@ -475,12 +480,16 @@
     modalBackdrop.style.display = "flex";
     modalClose.focus();
     document.addEventListener("focus", trapFocus, true);
+    // pause timer
+    if (timerId){ clearInterval(timerId); pausedForModal = true; }
   }
   function closeModal(){
     modalBackdrop.style.display = "none";
     $("#app").removeAttribute("aria-hidden");
     document.removeEventListener("focus", trapFocus, true);
     lastFocus?.focus();
+    // resume timer
+    if (pausedForModal){ startTimer(); pausedForModal = false; }
   }
   function trapFocus(e){
     if (modalBackdrop.style.display === "flex" && !modalBackdrop.contains(e.target)) {
@@ -626,11 +635,16 @@
   function levelTitleRow(level){
     const row = document.createElement("div");
     row.appendChild(hud());
-    const tipsBtn = ()=> openModal("Teach Me", tipsList(level.tips));
-    setTimeout(()=> $("#teach-btn")?.addEventListener("click", tipsBtn), 0);
-    setTimeout(()=> $("#hint-btn")?.addEventListener("click", ()=> showHint(level)), 0);
-    row.appendChild(progressBar( (state.levelIndex/settings.enabledLevels.length)*100 ));
+    const bar = progressBar( (state.levelIndex/settings.enabledLevels.length)*100 );
+    row.appendChild(bar);
     row.style.marginBottom="12px";
+
+    // Bind immediately after nodes exist
+    queueMicrotask(()=>{
+      $("#teach-btn")?.addEventListener("click", ()=> openModal("Teach Me", tipsList(level.tips)));
+      $("#hint-btn")?.addEventListener("click", ()=> showHint(level));
+    });
+
     return row;
   }
 
@@ -648,7 +662,7 @@
     state.perSkill[id].total += total;
   }
 
-  // LEVEL A: Keyword chips (with light auto-grouping of common synonyms)
+  // LEVEL A: Keyword chips (patched validator)
   function runKeywords(level){
     const prompt = choice(level.prompts);
     const chips = shuffle(prompt.chips);
@@ -715,17 +729,29 @@
       nextLevel();
     });
 
+    // PATCHED validator: tolerant to order, quotes, parens; requires each concept group represented
     function validateQuery(q, prompt){
-      // Lightweight validator: ensure presence of concept targets ignoring quotes
-      const lower = q.toLowerCase();
-      return prompt.target.every(t=>{
-        const needle = t.toLowerCase().replace(/"/g,"");
-        return lower.includes(needle.replace(/[()]/g,"").trim());
+      const text = q.toLowerCase();
+
+      const hasAny = (arr) => arr.some(term => {
+        const needle = term.toLowerCase().replace(/["()]/g, "").trim();
+        const plain = needle.replace(/\*/g, "");
+        return text.includes(needle) || (plain && text.includes(plain));
       });
+
+      const groups = prompt.target.map(t => {
+        const cleaned = t.toLowerCase().replace(/["()]/g,"").trim();
+        if (cleaned.includes(" or ")) {
+          return cleaned.split(/\s+or\s+/).map(s => s.trim());
+        }
+        return [cleaned];
+      });
+
+      return groups.every(terms => hasAny(terms));
     }
   }
 
-  // LEVEL B: Boolean (safer token check)
+  // LEVEL B: Boolean (patched grading)
   function runBoolean(level){
     const q = choice(level.questions);
     const card = document.createElement("div");
@@ -743,15 +769,28 @@
     `;
     render(card);
 
-    function normBool(s){
-      return s.toLowerCase().replace(/[()]/g," ").replace(/\s+/g," ").trim();
+    function tokenizeConcepts(s){
+      const t = s.toLowerCase().replace(/["]/g,"").replace(/\s+/g," ").trim();
+      const notParts = [];
+      // collect phrases immediately following NOT (rough heuristic)
+      t.replace(/\bnot\b\s+([^()]+?)(?=$|\s\b(and|or|not)\b)/g, (_, x)=> { notParts.push(x.trim()); return "";});
+      const words = t.replace(/\b(and|or|not)\b/g, " ").split(" ").map(w=>w.trim()).filter(Boolean);
+      return { words: new Set(words), notParts: notParts.map(s => s.trim()) };
     }
 
     $("#submit").addEventListener("click", ()=>{
-      const user = normBool($("#bool").value);
-      const ans  = normBool(q.answer);
-      const required = ans.split(" ").filter(Boolean);
-      const ok = required.every(t => user.includes(t));
+      const user = $("#bool").value;
+      const ans  = q.answer;
+
+      const u = tokenizeConcepts(user);
+      const a = tokenizeConcepts(ans);
+
+      const requiredPositives = Array.from(a.words).filter(w => !["and","or","not"].includes(w));
+      const hasAllPositives = requiredPositives.every(w => u.words.has(w));
+      const respectsNots    = a.notParts.every(n => !user.toLowerCase().includes(n.toLowerCase()));
+
+      const ok = hasAllPositives && respectsNots;
+
       if(ok){ state.score += settings.correctReward; state.correct++; }
       state.total++;
       recordSkill(level.id, ok?1:0, 1);
@@ -760,7 +799,7 @@
     });
   }
 
-  // LEVEL C: Source sort (stable ids + keyboard "selected" move)
+  // LEVEL C: Source sort
   function runSourceSort(level){
     const cards = shuffle(level.cards);
     const card = document.createElement("div");
@@ -859,7 +898,7 @@
     });
   }
 
-  // LEVEL D: Database match (unchanged grading)
+  // LEVEL D: Database match
   function runDatabaseMatch(level){
     const pairs = shuffle(level.pairs);
     const dbs = shuffle(Array.from(new Set(pairs.map(p=>p.db))));
@@ -919,7 +958,7 @@
     });
   }
 
-  // LEVEL E: Credibility quiz (render 3 questions; ARIA attributes set properly)
+  // LEVEL E: Credibility quiz
   function runEvaluation(level){
     const items = shuffle(level.items).slice(0, 3);
     const card = document.createElement("div");
@@ -963,7 +1002,7 @@
     });
   }
 
-  // Lightning signals (added visible selected style already in CSS)
+  // LEVEL F: Lightning signals
   function runLightning(level){
     const items = shuffle(level.signals);
     const card = document.createElement("div");
@@ -1009,7 +1048,6 @@
   }
 
   /*** Timer / Flow ***********************************************************/
-  let timerId=null;
   function tick(){
     state.remaining = clamp(state.remaining-1, 0, 999999);
     $("#timer")?.textContent = fmtTime(state.remaining);
