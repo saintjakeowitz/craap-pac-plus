@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Flight of the InfoLit — Single-File</title>
+<meta name="description" content="A whimsical, accessible info-literacy mini-game suite for libraries." />
+<meta name="theme-color" content="#940731" />
+<!-- No external fonts, no analytics, no trackers. System font stack only. -->
+
+<style>
+  :root{
+    /* Brand tokens */
+    --crimson:#940731;
+    --pink-a:#db4a6a;
+    --pink-b:#d54264;
+    --pink-c:#da4969;
+    --white:#ffffff;
+    --ink:#111111;
+
+    /* A11y / layout */
+    --bg:#fff;
+    --fg:#111;
+    --muted:#333;
+    --focus:#111; /* high-contrast outline; color not sole cue */
+    --radius:16px;
+    --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px;
+
+    /* Sizing */
+    --maxw:960px;
+  }
+
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#111; --fg:#fff; --muted:#cfcfcf; --focus:#fff; }
+    body { background:#111; color:#fff; }
+  }
+
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    background: var(--bg);
+    color: var(--fg);
+    line-height:1.45;
+  }
+
+  .wrap{max-width:var(--maxw); margin:auto; padding: var(--space-6) var(--space-4)}
+  .sr-only{position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden}
+  .btn{
+    appearance:none; border:2px solid var(--crimson); background:var(--crimson); color:#fff;
+    padding:10px 14px; border-radius:999px; cursor:pointer; font-weight:700;
+  }
+  .btn.secondary{ background:transparent; color:var(--crimson);}
+  .btn.ghost{ border-color:var(--pink-a); color:var(--pink-a); background:transparent; }
+  .btn:focus-visible{ outline:3px dashed var(--focus); outline-offset:2px }
+  .btn[disabled]{ opacity:.6; cursor:not-allowed }
+  .btn.ghost.selected{ outline:3px dashed var(--focus); outline-offset:2px; }
+
+  .hud{
+    display:flex; flex-wrap:wrap; gap:var(--space-3); align-items:center; justify-content:space-between;
+    padding:var(--space-3) var(--space-4); border:1px solid var(--pink-b); border-radius:var(--radius);
+    background: linear-gradient(180deg, rgba(148,7,49,.12), rgba(219,74,106,.07));
+  }
+  .hud .stat{ display:flex; gap:8px; align-items:center; font-weight:700 }
+  .chip{
+    display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px;
+    border:2px solid var(--pink-a); background:rgba(219,74,106,.08); margin:4px 6px; cursor:pointer; user-select:none;
+  }
+  .chip[aria-pressed="true"]{ background:var(--pink-a); color:#fff }
+  .chip:focus-visible{ outline:3px dashed var(--focus) }
+
+  .card{ border:1px solid var(--pink-b); border-radius:var(--radius); padding:var(--space-5); background:rgba(255,255,255,.6) }
+  @media (prefers-color-scheme: dark){ .card{ background:rgba(0,0,0,.35)}}
+
+  .grid{ display:grid; gap:var(--space-4)}
+  .grid.cols-2{ grid-template-columns:1fr; }
+  @media(min-width:720px){ .grid.cols-2{ grid-template-columns:1fr 1fr } }
+
+  .deco{
+    /* Art-deco geometric frame using layered gradients */
+    border-radius:var(--radius); padding:var(--space-5); position:relative; overflow:hidden;
+    background:
+      conic-gradient(from 90deg at 10% 10%, transparent 0 25%, rgba(148,7,49,.12) 0 50%, transparent 0 100%),
+      conic-gradient(from 270deg at 90% 90%, transparent 0 25%, rgba(219,74,106,.12) 0 50%, transparent 0 100%);
+    border:2px solid var(--crimson);
+  }
+
+  .title{
+    display:flex; align-items:center; justify-content:center; gap:12px; text-align:center;
+    font-weight:900; letter-spacing:.04em; text-transform:uppercase; font-size: clamp(20px, 4.5vw, 36px);
+    color:var(--crimson);
+  }
+
+  /* Airplane SVG badge */
+  .plane{ width:32px; height:32px; }
+  .plane svg{ display:block }
+
+  .choices, .dropzones{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px }
+  .dropzone{
+    flex:1 1 220px; min-height:86px; border:2px dashed var(--pink-c); border-radius:12px; padding:10px;
+  }
+  .dropzone h4{ margin:.25rem 0 .5rem 0 }
+  .pill{
+    border:2px solid var(--pink-c); border-radius:999px; padding:6px 10px; cursor:grab; display:inline-block;
+    background:rgba(218,73,105,.08)
+  }
+  .pill:focus-visible{ outline:3px dashed var(--focus) }
+  .pill[data-selected="true"]{ box-shadow:0 0 0 3px var(--focus) inset; }
+
+  .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:#0002; border:1px solid #0003; padding:2px 6px; border-radius:6px }
+
+  .muted{ color:var(--muted) }
+
+  .dialog-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center;
+  }
+  .dialog{
+    max-width:680px; width:95%; background:var(--bg); color:var(--fg);
+    border-radius:16px; border:2px solid var(--pink-b); padding:20px;
+  }
+
+  .progress{
+    width:100%; height:10px; border-radius:999px; background:#0001; overflow:hidden; border:1px solid #0003
+  }
+  .progress > div{ height:100%; background:linear-gradient(90deg, var(--crimson), var(--pink-a)); width:0% }
+
+  .notice{ padding:12px 14px; border-left:6px solid var(--pink-a); background:rgba(219,74,106,.08); border-radius:8px }
+
+  .footer-actions{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-end }
+
+  /* Focus visible outlines for interactive elements globally */
+  a:focus-visible, button:focus-visible, [tabindex]:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
+    outline:3px dashed var(--focus); outline-offset:2px;
+  }
+
+  /* Reduced motion: disable transitions/animations */
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="app" aria-live="polite">
+  <header class="deco" role="banner" aria-label="Game header">
+    <h1 class="title">
+      <span class="plane" aria-hidden="true">
+        <!-- Inline art-deco airplane (brand colors) -->
+        <svg viewBox="0 0 64 64" role="img" aria-label="Crimson airplane">
+          <path fill="#940731" d="M3 36l20-6 6-20c.6-2.1 3.6-2.1 4.2 0l6 20 20 6c2.1.6 2.1 3.6 0 4.2l-20 6-6 20c-.6 2.1-3.6 2.1-4.2 0l-6-20-20-6c-2.1-.6-2.1-3.6 0-4.2z"/>
+          <circle cx="32" cy="32" r="4" fill="#db4a6a"/>
+        </svg>
+      </span>
+      Flight of the InfoLit
+      <span class="plane" aria-hidden="true">
+        <svg viewBox="0 0 64 64"><path fill="#da4969" d="M3 36l20-6 6-20c.6-2.1 3.6-2.1 4.2 0l6 20 20 6c2.1.6 2.1 3.6 0 4.2l-20 6-6 20c-.6 2.1-3.6 2.1-4.2 0l-6-20-20-6c-2.1-.6-2.1-3.6 0-4.2z"/></svg>
+      </span>
+    </h1>
+    <p class="muted" id="tagline">Welcome aboard, researcher. Please keep your curiosity in the upright and locked position. 🍬✈️</p>
+  </header>
+
+  <div id="screen"></div>
+</div>
+
+<!-- Accessible modal (Teach Me / Hints / Admin) -->
+<div class="dialog-backdrop" id="modal-backdrop" role="none">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-desc">
+    <h2 id="modal-title" class="title" style="font-size:22px">Dialog</h2>
+    <div id="modal-desc"></div>
+    <div class="footer-actions" style="margin-top:16px">
+      <button class="btn" id="modal-close" aria-label="Close dialog">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================
+     INLINE GAME CONTENT JSON
+     ========================= -->
+<script type="application/json" id="game-content">
+{
+  "meta": {
+    "version": "1.0.0",
+    "title": "Flight of the InfoLit",
+    "secretSalt": "VLUC-🍬-ArtDeco-✈️-2025"
+  },
+  "settings": {
+    "enabledLevels": ["keywords","boolean","source-sort","database-match","evaluation","lightning"],
+    "difficulty": "Standard",
+    "timerSec": { "Easy": 900, "Standard": 780, "Challenging": 600 },
+    "hintPenalty": 2,
+    "correctReward": 10,
+    "timeBonusMax": 30,
+    "assessmentMode": false,
+    "attemptsPerLevel": 2
+  },
+  "levels": [
+    {
+      "id": "keywords",
+      "title": "Build Better Keywords",
+      "type": "chips",
+      "tips": [
+        "Start broad, then narrow with AND.",
+        "Use OR to include synonyms.",
+        "Truncate with * to include variant endings (e.g., psycholog*).",
+        "Avoid natural language—think in concepts & synonyms."
+      ],
+      "prompts": [
+        {
+          "topic": "How did the treatment of mental illness change from the early 1900s to the late 1900s?",
+          "target": ["\"mental illness\"","treatment","(asylum OR institutionalization)","(deinstitutionalization OR \"community care\")","(\"1900s\" OR \"20th century\")"],
+          "synonyms": [["asylum","institution","institutionalization"],["therapy","treatment","intervention"],["community care","deinstitutionalization"]],
+          "good_queries": [
+            "\"mental illness\" AND treatment AND (asylum OR institutionalization) AND (deinstitutionalization OR \"community care\") AND (\"1900s\" OR \"20th century\")"
+          ],
+          "chips": ["mental health","\"mental illness\"","treatment","therapy","asylum","institutionalization","deinstitutionalization","community care","\"1900s\"","\"20th century\"","policy","United States"]
+        },
+        {
+          "topic": "Impact of social media on adolescent sleep quality.",
+          "target": ["\"social media\"","adolescen*","sleep","(quality OR duration)"],
+          "synonyms": [["teen*","youth","adolescen*"],["sleep","sleep quality","sleep duration"]],
+          "good_queries": [
+            "\"social media\" AND adolescen* AND (sleep AND (quality OR duration))"
+          ],
+          "chips": ["\"social media\"","teen*","youth","adolescen*","sleep","sleep quality","sleep duration","circadian","screen time"]
+        },
+        {
+          "topic": "Effects of microplastics on marine invertebrates.",
+          "target": ["microplastic*","marine","invertebrate*","(toxic* OR ingestion)"],
+          "synonyms": [["ocean","marine"],["invertebrate*","bivalve*","crustacean*"]],
+          "good_queries": [
+            "microplastic* AND marine AND invertebrate* AND (toxic* OR ingestion)"
+          ],
+          "chips": ["microplastic*","marine","ocean","invertebrate*","bivalve*","crustacean*","toxicity","ingestion","exposure"]
+        }
+      ]
+    },
+    {
+      "id": "boolean",
+      "title": "Boolean Flight Plan",
+      "type": "boolean",
+      "tips": [
+        "AND narrows, OR broadens, NOT excludes.",
+        "Group synonyms with ( ) to control logic.",
+        "Put phrases in \"quotes\" to keep words together."
+      ],
+      "questions": [
+        {
+          "stem": "You need articles on college athletes and mental health, but not about professional leagues.",
+          "answer": "\"college athletes\" AND \"mental health\" NOT professional"
+        },
+        {
+          "stem": "Broaden results about renewable energy cars: electric OR hybrid, but avoid motorcycles.",
+          "answer": "(electric OR hybrid) AND cars NOT motorcycles"
+        },
+        {
+          "stem": "Find items on climate change risk assessment, grouping synonyms.",
+          "answer": "\"climate change\" AND (risk OR hazard) AND assessment"
+        }
+      ]
+    },
+    {
+      "id": "source-sort",
+      "title": "Sort the Sources",
+      "type": "sort",
+      "tips": [
+        "Primary sources = original, first-hand (e.g., diaries, datasets).",
+        "Secondary = analysis/commentary about primary sources.",
+        "Scholarly vs. Popular: peer review, citations, formal tone vs. accessible, ads."
+      ],
+      "buckets": ["Primary","Secondary","Scholarly","Popular"],
+      "cards": [
+        {"text":"A 1968 patient diary from a state hospital.","bucket":"Primary"},
+        {"text":"A meta-analysis of clinical trials in The Lancet.","bucket":"Scholarly"},
+        {"text":"A New York Times article on community mental health centers.","bucket":"Popular"},
+        {"text":"Digitized census dataset (1900–1950).","bucket":"Primary"},
+        {"text":"A book chapter interpreting WWII letters.","bucket":"Secondary"},
+        {"text":"Peer-reviewed article reporting new field data.","bucket":"Scholarly"}
+      ]
+    },
+    {
+      "id": "database-match",
+      "title": "Database Matchmaking",
+      "type": "match",
+      "tips": [
+        "JSTOR: humanities, older coverage, stable PDFs; great for phrase search & date filters.",
+        "PubMed: biomedical/health; MeSH terms help.",
+        "PsycINFO: psychology/behavior, strong subject indexing.",
+        "Primo VE: books, media, many databases at once; use Advanced Search fields."
+      ],
+      "pairs": [
+        {"topic":"Philosophy of embodiment in Merleau-Ponty","db":"JSTOR"},
+        {"topic":"Clinical trials on SSRI efficacy","db":"PubMed"},
+        {"topic":"Cognitive-behavioral therapy in adolescents","db":"PsycINFO"},
+        {"topic":"Find if Lewis owns 'Phenomenology of Perception'","db":"Primo VE"}
+      ]
+    },
+    {
+      "id": "evaluation",
+      "title": "CRAAP/RADAR Check",
+      "type": "quiz",
+      "tips": [
+        "Currency: is it up-to-date for the field?",
+        "Relevance/Authority: audience and author credentials.",
+        "Accuracy/Purpose: evidence, citations, bias disclaimers."
+      ],
+      "items": [
+        {
+          "prompt":"A blog post (2021) by a PhD sleep researcher summarizing their peer-reviewed study; cites the journal article; no ads.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Clear credentials, citations, and low bias indicators."
+        },
+        {
+          "prompt":"A site selling supplements claims 'microplastics cure!' with no citations; heavy product links.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Commercial bias, extraordinary claim without evidence."
+        },
+        {
+          "prompt":"A 1994 pop-magazine piece predicting the internet will end libraries by 2000.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Outdated and inaccurate; weak authority."
+        },
+        {
+          "prompt":"Peer-reviewed article in 2019 reporting methods and data.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Peer review, transparency, date acceptable."
+        }
+      ]
+    },
+    {
+      "id": "lightning",
+      "title": "Lightning Round",
+      "type": "signals",
+      "tips": [
+        "Peer-review signals: 'Received/Accepted' dates, DOI, references.",
+        "Citation basics: author, title, source, year; permalinks/DOIs preferred.",
+        "Broken links? Use the library link resolver or Primo 'Find It'."
+      ],
+      "signals": [
+        {"q":"Which is a strong sign of peer review?","choices":["A DOI and reference list","Stock photos and pop-up ads","Anonymous author"],"answer":0,"why":"DOIs and reference lists are common in scholarly articles."},
+        {"q":"Best element to copy for a citation?","choices":["The URL bar copy of a long session link","The DOI or permalink","The headline font style"],"answer":1,"why":"Permalinks/DOIs are stable; session URLs break."},
+        {"q":"You find a 404 on a scholarly article link. First move?","choices":["Give up and go nap","Try Primo 'Find It' or the journal title search","Email the author memes"],"answer":1,"why":"Link resolvers/journal search often locate full text."}
+      ]
+    }
+  ]
+}
+</script>
+
+<!-- =========================
+     GAME SCRIPT (patched)
+     ========================= -->
+<script>
+/* ==========================================================
+   Flight of the InfoLit — Single-File Vanilla Implementation
+   Patched: grading, seeding, ARIA, modal focus trap, validators, UI polish
+   ========================================================== */
+
+(function(){
+  "use strict";
+
+  /*** Utilities *************************************************************/
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+  const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+  const nowSec = ()=> Math.floor(Date.now()/1000);
+  const fmtTime = (s)=> { const m = Math.floor(s/60), r = s%60; return `${m}:${String(r).padStart(2,'0')}`; };
+
+  // Parse seed from URL (for deterministic randomness)
+  const urlObj = new URL(location.href);
+  const seedParam = urlObj.searchParams.get("seed") || "";
+
+  // Seeded RNG (xmur3 + sfc32)
+  function xmur3(str){ for(var i=0,h=1779033703^str.length;i<str.length;i++) h=Math.imul(h^str.charCodeAt(i),3432918353), h=h<<13|h>>>19; return function(){ h=Math.imul(h^h>>>16,2246822507); h=Math.imul(h^h>>>13,3266489909); return (h^h>>>16)>>>0; } }
+  function sfc32(a,b,c,d){ return function(){ a|=0;b|=0;c|=0;d|=0; var t=(a+b|0)+d|0; d=d+1|0; a=b^b>>>9; b=c+(c<<3)|0; c=(c<<21|c>>>11); c=c+t|0; return (t>>>0)/4294967296; } }
+  const seeded = seedParam ? (function(){ const g=xmur3(seedParam); return sfc32(g(),g(),g(),g()); })() : null;
+  const rand = ()=> seeded ? seeded() : Math.random();
+  const choice = arr => arr[Math.floor(rand()*arr.length)];
+  const shuffle = (arr)=>{ const a = arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(rand()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+  // Local persistence
+  const storageKey = "flight-infolit-v1";
+  const persist = (data)=>{ try{ localStorage.setItem(storageKey, JSON.stringify(data)); }catch(e){} };
+  const restore = ()=>{ try{ return JSON.parse(localStorage.getItem(storageKey)||"{}"); }catch(e){ return {}; } };
+
+  // Hash utils (completion codes)
+  async function sha256(str){
+    const enc = new TextEncoder().encode(str);
+    const buf = await crypto.subtle.digest("SHA-256", enc);
+    const view = new DataView(buf);
+    let hex="";
+    for(let i=0;i<view.byteLength;i+=4){
+      const v=view.getUint32(i);
+      hex += ("00000000"+v.toString(16)).slice(-8);
+    }
+    return hex;
+  }
+
+  /*** State *****************************************************************/
+  const content = JSON.parse($("#game-content").textContent);
+  let settings = content.settings;
+  const state = {
+    seed: seedParam || Math.random().toString(36).slice(2),
+    levelIndex: 0,
+    score: 0,
+    hintsUsed: 0,
+    correct: 0,
+    total: 0,
+    startedAt: nowSec(),
+    remaining: settings.timerSec[settings.difficulty] || 780,
+    perSkill: {}, // id -> {correct,total}
+    assessmentMode: !!settings.assessmentMode,
+    showAdminOnStart: (location.hash||"").toLowerCase().includes("#admin")
+  };
+
+  // Reduced motion
+  const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /*** Rendering scaffolding **************************************************/
+  const screen = $("#screen");
+  function render(node){
+    screen.innerHTML = "";
+    screen.appendChild(node);
+    screen.focus?.();
+  }
+
+  function hud(){
+    const totalLevels = settings.enabledLevels.length;
+    const wrap = document.createElement("div");
+    wrap.className = "hud";
+    wrap.setAttribute("role","group");
+    wrap.innerHTML = `
+      <div class="stat"><span aria-hidden="true">🏁</span> <span>Level ${state.levelIndex+1}/${totalLevels}</span></div>
+      <div class="stat"><span aria-hidden="true">⏱</span> <span id="timer">${fmtTime(state.remaining)}</span></div>
+      <div class="stat"><span aria-hidden="true">⭐</span> <span id="score">Score ${state.score}</span></div>
+      <div class="stat">
+        <button class="btn ghost" id="teach-btn" aria-haspopup="dialog" aria-controls="modal-backdrop">Teach Me</button>
+        <button class="btn secondary" id="hint-btn" ${state.assessmentMode ? "disabled" : ""} aria-label="Get a hint (reduces score)">Hint</button>
+      </div>
+    `;
+    return wrap;
+  }
+
+  // Progress bar
+  function progressBar(perc){
+    const d = document.createElement("div");
+    d.className = "progress"; d.innerHTML = `<div style="width:${perc}%" aria-hidden="true"></div>`;
+    d.setAttribute("aria-label","Progress");
+    d.setAttribute("role","progressbar");
+    d.setAttribute("aria-valuemin","0"); d.setAttribute("aria-valuemax","100");
+    d.setAttribute("aria-valuenow", String(Math.round(perc)));
+    d.setAttribute("aria-valuetext", `${Math.round(perc)}% complete`);
+    return d;
+  }
+
+  // Safer tips rendering (no HTML injection)
+  function tipsList(items){
+    const ul=document.createElement("ul");
+    items.forEach(t=>{ const li=document.createElement("li"); li.textContent=t; ul.appendChild(li); });
+    return ul.outerHTML;
+  }
+
+  // Modal helpers with focus trap & restore and aria-hidden on app
+  const modalBackdrop = $("#modal-backdrop");
+  const modalTitle = $("#modal-title");
+  const modalDesc = $("#modal-desc");
+  const modalClose = $("#modal-close");
+  let lastFocus=null;
+  function openModal(title, html){
+    lastFocus = document.activeElement;
+    modalTitle.textContent = title;
+    modalDesc.innerHTML = html;
+    $("#app").setAttribute("aria-hidden","true");
+    modalBackdrop.style.display = "flex";
+    modalClose.focus();
+    document.addEventListener("focus", trapFocus, true);
+  }
+  function closeModal(){
+    modalBackdrop.style.display = "none";
+    $("#app").removeAttribute("aria-hidden");
+    document.removeEventListener("focus", trapFocus, true);
+    lastFocus?.focus();
+  }
+  function trapFocus(e){
+    if (modalBackdrop.style.display === "flex" && !modalBackdrop.contains(e.target)) {
+      e.stopPropagation();
+      modalClose.focus();
+    }
+  }
+  modalClose.addEventListener("click", closeModal);
+  modalBackdrop.addEventListener("click", (e)=>{ if(e.target===modalBackdrop) closeModal(); });
+  window.addEventListener("keydown",(e)=>{ if(e.key==="Escape" && modalBackdrop.style.display==="flex") closeModal(); });
+
+  // Admin hotkey: Ctrl + .
+  window.addEventListener("keydown",(e)=>{ if(e.ctrlKey && e.key === "."){ e.preventDefault(); showAdmin(); } });
+
+  /*** Screens ***************************************************************/
+  function homeScreen(){
+    const wrap = document.createElement("div");
+    wrap.className = "grid";
+    const deco = document.createElement("div");
+    deco.className = "deco";
+    deco.innerHTML = `
+      <h2 class="title" style="font-size:26px">Welcome Aboard</h2>
+      <p>Fasten your seatbelts: you’ll taxi through bite-size levels that sharpen your research radar — keyword finesse, Boolean aerobatics, source sorting, database matchmaking, and credibility checks. Tone? Whimsical Wonka, but your librarian-pilot is serious about rigor.</p>
+      <div class="notice">
+        <strong>Keyboard:</strong> <span class="kbd">Tab</span>, <span class="kbd">Shift+Tab</span>, <span class="kbd">Enter</span>/<span class="kbd">Space</span> to activate; arrows where noted.  
+        <strong>Accessibility:</strong> No essential info by color alone; visible focus; reduced motion respected.
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px">
+        <button class="btn" id="start">Start</button>
+        <button class="btn secondary" id="how">How to Play</button>
+        <button class="btn ghost" id="access">Accessibility</button>
+        <button class="btn ghost" id="admin" aria-label="Open Admin (instructor) panel">Educator/Admin</button>
+      </div>
+    `;
+    wrap.appendChild(deco);
+
+    // attach
+    render(wrap);
+    $("#start").addEventListener("click", startGame);
+    $("#how").addEventListener("click", ()=> openModal("How to Play", `
+      <ul>
+        <li>Complete each mini-level. Submit to check answers. Hints reduce points.</li>
+        <li>Timer gently nudges velocity; speed earns a small bonus.</li>
+        <li>“Teach Me” gives concise tips with examples for each skill.</li>
+        <li>End screen shows score breakdown and a copy-paste summary for LMS.</li>
+      </ul>
+    `));
+    $("#access").addEventListener("click", ()=> openModal("Accessibility", `
+      <ul>
+        <li>WCAG 2.1 AA considerations: contrast, focus states, keyboard access.</li>
+        <li>ARIA roles/labels on dialogs and key components.</li>
+        <li>Respects <em>prefers-reduced-motion</em>.</li>
+      </ul>
+      <p class="muted">Need tweaks for your users? Use Admin &gt; Export/Import to adjust content.</p>
+    `));
+    $("#admin").addEventListener("click", showAdmin);
+
+    if(state.showAdminOnStart){ showAdmin(); }
+  }
+
+  async function endScreen(){
+    const totalLevels = settings.enabledLevels.length;
+    const elapsed = nowSec() - state.startedAt;
+    const lines = [];
+    lines.push(`Flight of the InfoLit — Progress Summary`);
+    lines.push(`Score: ${state.score}`);
+    lines.push(`Time: ${fmtTime(elapsed)}`);
+    for(const [k,v] of Object.entries(state.perSkill)){
+      lines.push(`${k}: ${v.correct}/${v.total}`);
+    }
+    lines.push(`Tips: Keep building synonyms with OR; use Advanced Search fields in Primo; try phrase search in JSTOR; filter dates and subjects in EBSCOhost.`);
+    const summaryText = lines.join("\n");
+
+    // Completion code (assessment mode shows hash)
+    let code = "";
+    if(state.assessmentMode){
+      const ts = Date.now();
+      const str = `${state.score}|${ts}|${content.meta.secretSalt}`;
+      code = await sha256(str);
+    }
+
+    const wrap = document.createElement("div");
+    wrap.className = "grid";
+    const pane = document.createElement("div");
+    pane.className = "card";
+    pane.innerHTML = `
+      <h2 class="title" style="font-size:26px">Touchdown! ✈️</h2>
+      <div class="hud" style="margin-bottom:12px">
+        <div>Final Score: <strong>${state.score}</strong></div>
+        <div>Time: <strong>${fmtTime(elapsed)}</strong></div>
+      </div>
+      <div class="grid cols-2">
+        <div>
+          <h3>Per-Skill</h3>
+          <ul id="skill-list"></ul>
+        </div>
+        <div>
+          <h3>Study Tips</h3>
+          <ul>
+            <li><strong>Primo VE Advanced:</strong> use field filters (Title/Subject), date ranges, and Resource Type.</li>
+            <li><strong>JSTOR:</strong> phrase searches in quotes, narrow by subject &amp; date, leverage stable PDFs.</li>
+            <li><strong>EBSCOhost:</strong> subject headings, peer-review limiter, adjust for exact phrase &amp; date.</li>
+          </ul>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <button class="btn" id="copy">Copy Progress</button>
+        <button class="btn secondary" id="again">Play Again</button>
+        <button class="btn ghost" id="share">Share Link (keeps seed)</button>
+      </div>
+      ${state.assessmentMode ? `<p class="notice" style="margin-top:12px"><strong>Completion Code:</strong> <span id="code">${code.slice(0,16)}…</span> <span class="muted">(SHA-256)</span></p>`:``}
+    `;
+    wrap.appendChild(pane);
+    render(wrap);
+
+    // fill per-skill list
+    const ul = $("#skill-list");
+    for(const [k,v] of Object.entries(state.perSkill)){
+      const li=document.createElement("li"); li.textContent = `${k}: ${v.correct}/${v.total}`;
+      ul.appendChild(li);
+    }
+
+    $("#copy").addEventListener("click", async ()=>{
+      try{
+        await navigator.clipboard.writeText(summaryText);
+        $("#copy").textContent = "Copied!";
+        setTimeout(()=> $("#copy").textContent="Copy Progress", 1200);
+      }catch(e){
+        openModal("Copy Progress", `<p>Couldn't access clipboard. Select and copy manually:</p><pre>${summaryText.replace(/</g,"&lt;")}</pre>`);
+      }
+    });
+    $("#again").addEventListener("click", ()=> { resetGame(); startGame(); });
+    $("#share").addEventListener("click", ()=>{
+      const url = new URL(location.href);
+      url.searchParams.set("seed", state.seed);
+      history.replaceState({}, "", url.toString());
+      navigator.clipboard?.writeText(url.toString());
+      openModal("Shareable Link", `<p>Link copied to clipboard. Anyone with the link gets the same randomized order.</p>`);
+    });
+  }
+
+  /*** Level runners **********************************************************/
+  function levelTitleRow(level){
+    const row = document.createElement("div");
+    row.appendChild(hud());
+    const tipsBtn = ()=> openModal("Teach Me", tipsList(level.tips));
+    setTimeout(()=> $("#teach-btn")?.addEventListener("click", tipsBtn), 0);
+    setTimeout(()=> $("#hint-btn")?.addEventListener("click", ()=> showHint(level)), 0);
+    row.appendChild(progressBar( (state.levelIndex/settings.enabledLevels.length)*100 ));
+    row.style.marginBottom="12px";
+    return row;
+  }
+
+  function showHint(level){
+    state.hintsUsed++;
+    state.score = Math.max(0, state.score - settings.hintPenalty);
+    const hint = (level.tips && level.tips[0]) || "Focus on the key concept nouns and consistent operators.";
+    openModal("Hint", `<p>${hint}</p><p class="muted">(-${settings.hintPenalty} points)</p>`);
+    $("#score").textContent = `Score ${state.score}`;
+  }
+
+  function recordSkill(id, correct, total){
+    if(!state.perSkill[id]) state.perSkill[id] = {correct:0,total:0};
+    state.perSkill[id].correct += correct;
+    state.perSkill[id].total += total;
+  }
+
+  // LEVEL A: Keyword chips (with light auto-grouping of common synonyms)
+  function runKeywords(level){
+    const prompt = choice(level.prompts);
+    const chips = shuffle(prompt.chips);
+    const card = document.createElement("div");
+    card.className="card";
+    card.innerHTML = `
+      ${levelTitleRow(level).outerHTML}
+      <h3 class="title" style="font-size:22px">${level.title}</h3>
+      <p><strong>Topic:</strong> ${prompt.topic}</p>
+      <p class="muted">Toggle the chips to compose a strong query (quotes for phrases, OR for synonyms).</p>
+      <div class="choices" id="chipbox" role="group" aria-label="Keyword chips"></div>
+      <div style="margin-top:12px">
+        <label for="query-out"><strong>Query</strong> (editable):</label>
+        <textarea id="query-out" rows="3" style="width:100%; border:1px solid var(--pink-c); border-radius:8px; padding:8px"></textarea>
+      </div>
+      <div class="footer-actions" style="margin-top:12px">
+        <button class="btn" id="submit">Submit</button>
+      </div>
+    `;
+    render(card);
+    const box = $("#chipbox");
+    chips.forEach((txt)=>{
+      const b = document.createElement("button");
+      b.className="chip";
+      b.type="button";
+      b.setAttribute("aria-pressed","false");
+      b.textContent = txt;
+      b.addEventListener("click", ()=>{
+        const pressed = b.getAttribute("aria-pressed")==="true";
+        b.setAttribute("aria-pressed", String(!pressed));
+        updateQuery();
+      });
+      box.appendChild(b);
+    });
+
+    function updateQuery(){
+      const selected = $$(".chip[aria-pressed='true']").map(el=>el.textContent);
+      const group = (arr, set) => {
+        const picks = arr.filter(t => set.includes(t));
+        if (picks.length > 1) {
+          arr = arr.filter(t => !set.includes(t));
+          arr.push("(" + picks.join(" OR ") + ")");
+        }
+        return arr;
+      };
+      let parts = selected.slice();
+      // simple auto-groups matching common synonym sets
+      parts = group(parts, ["asylum","institutionalization","institution"]);
+      parts = group(parts, ["deinstitutionalization","community care"]);
+      parts = group(parts, ["sleep","sleep quality","sleep duration"]);
+      $("#query-out").value = parts.join(" AND ");
+    }
+    $("#query-out").value = ""; // start blank
+
+    $("#submit").addEventListener("click", ()=>{
+      const userQ = $("#query-out").value.trim();
+      const ok = validateQuery(userQ, prompt);
+      const why = ok ? "Chef’s kiss. 📚 You grouped key concepts and used quotes/synonyms well." :
+                       "Close! Try grouping synonyms in (parentheses) and keep multi-word phrases in quotes.";
+      if(ok){ state.score += settings.correctReward; state.correct++; }
+      state.total++;
+      recordSkill(level.id, ok?1:0, 1);
+      openModal("Result", `<p>${why}</p><p class="muted">Model example: <code>${prompt.good_queries[0].replace(/</g,"&lt;")}</code></p>`);
+      nextLevel();
+    });
+
+    function validateQuery(q, prompt){
+      // Lightweight validator: ensure presence of concept targets ignoring quotes
+      const lower = q.toLowerCase();
+      return prompt.target.every(t=>{
+        const needle = t.toLowerCase().replace(/"/g,"");
+        return lower.includes(needle.replace(/[()]/g,"").trim());
+      });
+    }
+  }
+
+  // LEVEL B: Boolean (safer token check)
+  function runBoolean(level){
+    const q = choice(level.questions);
+    const card = document.createElement("div");
+    card.className="card";
+    card.innerHTML = `
+      ${levelTitleRow(level).outerHTML}
+      <h3 class="title" style="font-size:22px">${level.title}</h3>
+      <p>${q.stem}</p>
+      <label for="bool">Enter a Boolean query (use AND/OR/NOT, quotes, parentheses):</label>
+      <textarea id="bool" rows="3" style="width:100%; border:1px solid var(--pink-c); border-radius:8px; padding:8px" aria-describedby="bool-help"></textarea>
+      <p id="bool-help" class="muted">Example form: <code>“phrase” AND (syn1 OR syn2) NOT excluded</code></p>
+      <div class="footer-actions" style="margin-top:12px">
+        <button class="btn" id="submit">Submit</button>
+      </div>
+    `;
+    render(card);
+
+    function normBool(s){
+      return s.toLowerCase().replace(/[()]/g," ").replace(/\s+/g," ").trim();
+    }
+
+    $("#submit").addEventListener("click", ()=>{
+      const user = normBool($("#bool").value);
+      const ans  = normBool(q.answer);
+      const required = ans.split(" ").filter(Boolean);
+      const ok = required.every(t => user.includes(t));
+      if(ok){ state.score += settings.correctReward; state.correct++; }
+      state.total++;
+      recordSkill(level.id, ok?1:0, 1);
+      openModal("Result", `<p>${ok?"Smooth operator! 🥳":"Not quite."}</p><p class="muted">Model answer: <code>${q.answer.replace(/</g,"&lt;")}</code></p>`);
+      nextLevel();
+    });
+  }
+
+  // LEVEL C: Source sort (stable ids + keyboard "selected" move)
+  function runSourceSort(level){
+    const cards = shuffle(level.cards);
+    const card = document.createElement("div");
+    card.className="card";
+    card.innerHTML = `
+      ${levelTitleRow(level).outerHTML}
+      <h3 class="title" style="font-size:22px">${level.title}</h3>
+      <p class="muted">Assign each source card to its bucket. Press <span class="kbd">Enter</span> on a card to select it, then <span class="kbd">Enter</span> on a bucket to move. You can also drag with a mouse.</p>
+
+      <div class="grid cols-2">
+        <div>
+          <h4>Cards</h4>
+          <div id="cards" class="choices" role="list"></div>
+        </div>
+        <div>
+          <h4>Buckets</h4>
+          <div class="dropzones" id="zones"></div>
+        </div>
+      </div>
+      <div class="footer-actions" style="margin-top:12px">
+        <button class="btn" id="submit">Submit</button>
+      </div>
+    `;
+    render(card);
+    const cardsBox = $("#cards");
+    const zones = $("#zones");
+
+    const mapping = new Map(); // cid (string) -> bucket
+    let selectedCard=null;
+
+    // build cards
+    cards.forEach((c,i)=>{
+      const el = document.createElement("div");
+      el.className="pill";
+      el.setAttribute("tabindex","0");
+      el.setAttribute("role","listitem");
+      el.textContent = c.text;
+      el.draggable = true;
+      el.dataset.cid = String(i); // stable id
+
+      el.addEventListener("dragstart", e=>{ e.dataTransfer.setData("text/plain", el.dataset.cid); });
+      el.addEventListener("keydown", e=>{
+        if(e.key==="Enter" || e.key===" "){
+          selectedCard = el;
+          el.setAttribute("data-selected","true");
+        }
+      });
+      cardsBox.appendChild(el);
+      mapping.set(el.dataset.cid, null);
+    });
+
+    // build zones
+    level.buckets.forEach(name=>{
+      const dz = document.createElement("div");
+      dz.className="dropzone";
+      dz.setAttribute("tabindex","0");
+      dz.setAttribute("aria-label", `Bucket ${name}`);
+      dz.innerHTML = `<h4>${name}</h4><div class="choices" data-bucket="${name}"></div>`;
+      dz.addEventListener("dragover", e=>{ e.preventDefault(); });
+      dz.addEventListener("drop", e=>{
+        e.preventDefault();
+        const cid = e.dataTransfer.getData("text/plain");
+        const cardEl = $$(".pill").find(p=>p.dataset.cid===cid);
+        if(cardEl){
+          dz.querySelector(".choices").appendChild(cardEl);
+          mapping.set(cid, name);
+          cardEl.removeAttribute("data-selected");
+          selectedCard=null;
+        }
+      });
+      dz.addEventListener("keydown", e=>{
+        if(e.key==="Enter" || e.key===" "){
+          if(selectedCard){
+            dz.querySelector(".choices").appendChild(selectedCard);
+            mapping.set(selectedCard.dataset.cid, name);
+            selectedCard.removeAttribute("data-selected");
+            selectedCard=null;
+          }
+        }
+      });
+      zones.appendChild(dz);
+    });
+
+    $("#submit").addEventListener("click", ()=>{
+      let correct=0;
+      cards.forEach((c,idx)=>{
+        const assigned = mapping.get(String(idx));
+        if(assigned === c.bucket) correct++;
+      });
+      const ok = correct === cards.length;
+      if(ok){ state.score += settings.correctReward; state.correct+=cards.length; }
+      state.total+=cards.length;
+      recordSkill(level.id, correct, cards.length);
+      openModal("Result", `<p>${ok?"Perfect landing!":"You drifted off course on a few."}</p><p>${correct}/${cards.length} correct.</p>`);
+      nextLevel();
+    });
+  }
+
+  // LEVEL D: Database match (unchanged grading)
+  function runDatabaseMatch(level){
+    const pairs = shuffle(level.pairs);
+    const dbs = shuffle(Array.from(new Set(pairs.map(p=>p.db))));
+    const card = document.createElement("div");
+    card.className="card";
+    card.innerHTML = `
+      ${levelTitleRow(level).outerHTML}
+      <h3 class="title" style="font-size:22px">${level.title}</h3>
+      <p class="muted">Match each topic to the best database/platform.</p>
+      <div class="grid cols-2">
+        <div>
+          <h4>Topics</h4>
+          <div id="topics"></div>
+        </div>
+        <div>
+          <h4>Databases</h4>
+          <div id="dbs"></div>
+        </div>
+      </div>
+      <div class="footer-actions" style="margin-top:12px">
+        <button class="btn" id="submit">Submit</button>
+      </div>
+    `;
+    render(card);
+    const tWrap = $("#topics");
+    const dWrap = $("#dbs");
+
+    const selects=[];
+    pairs.forEach((p)=>{
+      const row = document.createElement("div");
+      row.style.margin="8px 0";
+      row.innerHTML = `<label><strong>${p.topic}</strong><br/>
+        <select data-ans="${p.db}" style="margin-top:6px; padding:6px; border-radius:8px; border:1px solid var(--pink-c)">
+          <option value="">Select…</option>
+          ${dbs.map(d=>`<option value="${d}">${d}</option>`).join("")}
+        </select>
+      </label>`;
+      tWrap.appendChild(row);
+      selects.push(row.querySelector("select"));
+    });
+
+    dWrap.innerHTML = tipsList([
+      "JSTOR: Humanities/social sciences; older coverage; phrase searches; great PDFs.",
+      "PubMed: Health/biomed; use MeSH; clinical queries.",
+      "PsycINFO: Psychology/behavior; strong thesaurus/subjects.",
+      "Primo VE: Catalog & more; Advanced fields for Title/Subject; Resource Type filters."
+    ]);
+
+    $("#submit").addEventListener("click", ()=>{
+      let correct=0;
+      selects.forEach(sel=>{ if(sel.value===sel.dataset.ans) correct++; });
+      if(correct===selects.length){ state.score += settings.correctReward; state.correct+=selects.length; }
+      state.total+=selects.length;
+      recordSkill(level.id, correct, selects.length);
+      openModal("Result", `<p>${correct}/${selects.length} correct.</p>`);
+      nextLevel();
+    });
+  }
+
+  // LEVEL E: Credibility quiz (render 3 questions; ARIA attributes set properly)
+  function runEvaluation(level){
+    const items = shuffle(level.items).slice(0, 3);
+    const card = document.createElement("div");
+    card.className="card";
+    card.innerHTML = `
+      ${levelTitleRow(level).outerHTML}
+      <h3 class="title" style="font-size:22px">${level.title}</h3>
+      <form id="quiz"></form>
+      <div class="footer-actions" style="margin-top:12px">
+        <button class="btn" id="submit">Submit</button>
+      </div>
+    `;
+    render(card);
+    const form = $("#quiz");
+    items.forEach((it,idx)=>{
+      const fs = document.createElement("fieldset");
+      fs.style.margin="8px 0";
+      fs.setAttribute("role","group");
+      fs.setAttribute("aria-label", `Question ${idx+1}`);
+      fs.innerHTML = `
+        <legend><strong>${it.prompt}</strong></legend>
+        ${it.options.map((opt,i)=>`
+          <label style="display:block; margin:6px 0">
+            <input type="radio" name="q${idx}" value="${i}"> ${opt}
+          </label>`).join("")}
+      `;
+      form.appendChild(fs);
+    });
+
+    $("#submit").addEventListener("click", ()=>{
+      let correct=0, total=items.length;
+      items.forEach((it,idx)=>{
+        const pick = form.querySelector(`input[name="q${idx}"]:checked`);
+        if(pick && Number(pick.value)===it.answer) correct++;
+      });
+      if(correct===total){ state.score += settings.correctReward; }
+      state.correct+=correct; state.total+=total;
+      recordSkill(level.id, correct, total);
+      openModal("Result", `<p>${correct}/${total} correct.</p>`);
+      nextLevel();
+    });
+  }
+
+  // Lightning signals (added visible selected style already in CSS)
+  function runLightning(level){
+    const items = shuffle(level.signals);
+    const card = document.createElement("div");
+    card.className="card";
+    card.innerHTML = `
+      ${levelTitleRow(level).outerHTML}
+      <h3 class="title" style="font-size:22px">${level.title}</h3>
+      <div id="qs"></div>
+      <div class="footer-actions" style="margin-top:12px">
+        <button class="btn" id="submit">Submit</button>
+      </div>
+    `;
+    render(card);
+
+    const qs = $("#qs");
+    const picks=[];
+    items.forEach((it)=>{
+      const box=document.createElement("div");
+      box.className="notice"; box.style.margin="8px 0";
+      box.innerHTML = `<p><strong>${it.q}</strong></p>
+        ${it.choices.map((c,i)=>`<button class="btn ghost" data-i="${i}">${c}</button>`).join(" ")}`;
+      qs.appendChild(box);
+      const rowPicks = {pick:null};
+      picks.push(rowPicks);
+      box.querySelectorAll("button").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          box.querySelectorAll("button").forEach(b=>b.classList.remove("selected"));
+          btn.classList.add("selected");
+          rowPicks.pick = Number(btn.dataset.i);
+        });
+      });
+    });
+
+    $("#submit").addEventListener("click", ()=>{
+      let correct=0;
+      items.forEach((it,i)=>{ if(picks[i].pick===it.answer) correct++; });
+      if(correct===items.length){ state.score += settings.correctReward; }
+      state.correct+=correct; state.total+=items.length;
+      recordSkill(level.id, correct, items.length);
+      openModal("Result", `<p>${correct}/${items.length} correct.</p>`);
+      nextLevel();
+    });
+  }
+
+  /*** Timer / Flow ***********************************************************/
+  let timerId=null;
+  function tick(){
+    state.remaining = clamp(state.remaining-1, 0, 999999);
+    $("#timer")?.textContent = fmtTime(state.remaining);
+    if(state.remaining<=0){
+      clearInterval(timerId);
+      return endScreen();
+    }
+  }
+
+  function startTimer(){
+    clearInterval(timerId);
+    timerId = setInterval(tick, 1000);
+  }
+
+  function nextLevel(){
+    // tiny time bonus for finishing with time to spare
+    const pctLeft = state.remaining / (settings.timerSec[settings.difficulty]||780);
+    const bonus = Math.round(settings.timeBonusMax * pctLeft * 0.2); // gentle
+    state.score += bonus;
+
+    state.levelIndex++;
+    if(state.levelIndex >= settings.enabledLevels.length){ clearInterval(timerId); endScreen(); }
+    else { runCurrentLevel(); }
+    $("#score")?.textContent = `Score ${state.score}`;
+  }
+
+  function runCurrentLevel(){
+    persist({seed:state.seed, score:state.score, idx:state.levelIndex, assess: state.assessmentMode});
+    const id = settings.enabledLevels[state.levelIndex];
+    const level = content.levels.find(l=>l.id===id);
+    if(!level){ return nextLevel(); }
+    switch(level.type){
+      case "chips": return runKeywords(level);
+      case "boolean": return runBoolean(level);
+      case "sort": return runSourceSort(level);
+      case "match": return runDatabaseMatch(level);
+      case "quiz": return runEvaluation(level);
+      case "signals": return runLightning(level);
+      default: return nextLevel();
+    }
+  }
+
+  function resetGame(){
+    state.levelIndex = 0;
+    state.score = 0; state.correct=0; state.total=0; state.hintsUsed=0;
+    state.startedAt = nowSec();
+    state.remaining = settings.timerSec[settings.difficulty] || 780;
+    state.perSkill = {};
+  }
+
+  function startGame(){
+    resetGame();
+    startTimer();
+    runCurrentLevel();
+  }
+
+  /*** Admin Panel ************************************************************/
+  function showAdmin(){
+    const currentJSON = JSON.stringify(content, null, 2);
+    openModal("Educator/Admin Panel", `
+      <div class="notice"><strong>Assessment Mode:</strong> ${state.assessmentMode ? "ON" : "OFF"} (locks hints; shows completion code)</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin:10px 0">
+        <button class="btn" id="toggle-assess">${state.assessmentMode ? "Disable" : "Enable"} Assessment</button>
+        <button class="btn secondary" id="enable-all">Enable All Levels</button>
+      </div>
+      <h3>Import/Export Content JSON</h3>
+      <p class="muted">Edit the JSON to customize prompts, tips, or to add new levels. Keep IDs stable.</p>
+      <textarea id="json" rows="14" style="width:100%; border:1px solid var(--pink-c); border-radius:8px; padding:8px">${currentJSON}</textarea>
+      <div class="footer-actions" style="margin-top:10px">
+        <button class="btn" id="apply">Apply JSON</button>
+        <button class="btn ghost" id="download">Download JSON</button>
+      </div>
+    `);
+    $("#toggle-assess").addEventListener("click", ()=>{
+      state.assessmentMode = !state.assessmentMode;
+      settings.assessmentMode = state.assessmentMode;
+      persist({ ...restore(), assess: state.assessmentMode });
+      showAdmin();
+    });
+    $("#enable-all").addEventListener("click", ()=>{
+      settings.enabledLevels = content.levels.map(l=>l.id);
+      showAdmin();
+    });
+    $("#apply").addEventListener("click", ()=>{
+      try{
+        const obj = JSON.parse($("#json").value);
+        Object.assign(content, obj);
+        settings = content.settings;
+        closeModal();
+        openModal("Success", "<p>Content updated.</p>");
+      }catch(e){
+        openModal("Error", `<p>JSON parse error: ${e.message}</p>`);
+      }
+    });
+    $("#download").addEventListener("click", ()=>{
+      const blob = new Blob([$("#json").value], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "gameContent.json"; a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  /*** Minimal inline tests (dev self-check) **********************************/
+  function selfTests(){
+    let passed=0,total=0;
+    // scoring clamp test
+    total++; if(clamp(10,0,5)===5) passed++;
+    // shuffle immutability
+    total++; { const a=[1,2,3]; const b=shuffle(a); if(a.length===b.length && a!==b) passed++; }
+    // sha256 length (hex 64 chars)
+    total++; sha256("abc").then(hex=>{ if(hex.length===64) passed++; console.info(`Self-tests: ${passed}/${total}`); });
+  }
+  selfTests();
+
+  /*** Boot ******************************************************************/
+  homeScreen();
+})();
+</script>
+</body>
+</html>
