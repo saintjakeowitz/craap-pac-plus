@@ -1,7 +1,7 @@
 /* ==========================================================
    Flight of the InfoLit — Vanilla Implementation (app.js)
    Patched: tolerant grading, seeded RNG, ARIA, modal focus trap,
-   timer pause in modals, inline self-tests
+   timer pause in modals, inline self-tests, no ?. on assignment
    ========================================================== */
 
 (function(){
@@ -69,7 +69,7 @@
   function render(node){
     screen.innerHTML = "";
     screen.appendChild(node);
-    screen.focus?.();
+    if (screen && typeof screen.focus === "function") screen.focus();
   }
 
   function hud(){
@@ -298,7 +298,8 @@
     state.score = Math.max(0, state.score - settings.hintPenalty);
     const hint = (level.tips && level.tips[0]) || "Focus on the key concept nouns and consistent operators.";
     openModal("Hint", `<p>${hint}</p><p class="muted">(-${settings.hintPenalty} points)</p>`);
-    $("#score").textContent = `Score ${state.score}`;
+    const s = $("#score");
+    if (s) s.textContent = `Score ${state.score}`;
   }
 
   function recordSkill(id, correct, total){
@@ -695,7 +696,8 @@
   /*** Timer / Flow ***********************************************************/
   function tick(){
     state.remaining = clamp(state.remaining-1, 0, 999999);
-    $("#timer")?.textContent = fmtTime(state.remaining);
+    const t = $("#timer");
+    if (t) t.textContent = fmtTime(state.remaining);
     if(state.remaining<=0){
       clearInterval(timerId);
       return endScreen();
@@ -716,7 +718,9 @@
     state.levelIndex++;
     if(state.levelIndex >= settings.enabledLevels.length){ clearInterval(timerId); endScreen(); }
     else { runCurrentLevel(); }
-    $("#score")?.textContent = `Score ${state.score}`;
+
+    const s = $("#score");
+    if (s) s.textContent = `Score ${state.score}`;
   }
 
   function runCurrentLevel(){
