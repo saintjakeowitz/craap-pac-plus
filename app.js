@@ -308,7 +308,7 @@
     state.perSkill[id].total += total;
   }
 
-  // LEVEL A: Keyword chips (patched validator)
+  // LEVEL A: Keyword chips
   function runKeywords(level){
     const prompt = choice(level.prompts);
     const chips = shuffle(prompt.chips);
@@ -355,13 +355,12 @@
         return arr;
       };
       let parts = selected.slice();
-      // simple auto-groups matching common synonym sets
       parts = group(parts, ["asylum","institutionalization","institution"]);
       parts = group(parts, ["deinstitutionalization","community care"]);
       parts = group(parts, ["sleep","sleep quality","sleep duration"]);
       $("#query-out").value = parts.join(" AND ");
     }
-    $("#query-out").value = ""; // start blank
+    $("#query-out").value = "";
 
     $("#submit").addEventListener("click", ()=>{
       const userQ = $("#query-out").value.trim();
@@ -375,16 +374,13 @@
       nextLevel();
     });
 
-    // PATCHED validator: tolerant to order, quotes, parens; requires each concept group represented
     function validateQuery(q, prompt){
       const text = q.toLowerCase();
-
       const hasAny = (arr) => arr.some(term => {
         const needle = term.toLowerCase().replace(/["()]/g, "").trim();
         const plain = needle.replace(/\*/g, "");
         return text.includes(needle) || (plain && text.includes(plain));
       });
-
       const groups = prompt.target.map(t => {
         const cleaned = t.toLowerCase().replace(/["()]/g,"").trim();
         if (cleaned.includes(" or ")) {
@@ -392,7 +388,6 @@
         }
         return [cleaned];
       });
-
       return groups.every(terms => hasAny(terms));
     }
   }
@@ -418,7 +413,6 @@
     function tokenizeConcepts(s){
       const t = s.toLowerCase().replace(/["]/g,"").replace(/\s+/g," ").trim();
       const notParts = [];
-      // collect phrases immediately following NOT (rough heuristic)
       t.replace(/\bnot\b\s+([^()]+?)(?=$|\s\b(and|or|not)\b)/g, (_, x)=> { notParts.push(x.trim()); return "";});
       const words = t.replace(/\b(and|or|not)\b/g, " ").split(" ").map(w=>w.trim()).filter(Boolean);
       return { words: new Set(words), notParts: notParts.map(s => s.trim()) };
@@ -473,10 +467,9 @@
     const cardsBox = $("#cards");
     const zones = $("#zones");
 
-    const mapping = new Map(); // cid (string) -> bucket
+    const mapping = new Map();
     let selectedCard=null;
 
-    // build cards
     cards.forEach((c,i)=>{
       const el = document.createElement("div");
       el.className="pill";
@@ -484,7 +477,7 @@
       el.setAttribute("role","listitem");
       el.textContent = c.text;
       el.draggable = true;
-      el.dataset.cid = String(i); // stable id
+      el.dataset.cid = String(i);
 
       el.addEventListener("dragstart", e=>{ e.dataTransfer.setData("text/plain", el.dataset.cid); });
       el.addEventListener("keydown", e=>{
@@ -497,7 +490,6 @@
       mapping.set(el.dataset.cid, null);
     });
 
-    // build zones
     level.buckets.forEach(name=>{
       const dz = document.createElement("div");
       dz.className="dropzone";
@@ -604,9 +596,9 @@
     });
   }
 
-  // LEVEL E: Credibility quiz
+  // LEVEL E: Credibility quiz — show 5 per run
   function runEvaluation(level){
-    const items = shuffle(level.items).slice(0, 3);
+    const items = shuffle(level.items).slice(0, 5);
     const card = document.createElement("div");
     card.className="card";
     card.innerHTML = `
@@ -648,9 +640,9 @@
     });
   }
 
-  // LEVEL F: Lightning signals
+  // LEVEL F: Lightning — show 8 per run
   function runLightning(level){
-    const items = shuffle(level.signals);
+    const items = shuffle(level.signals).slice(0, 8);
     const card = document.createElement("div");
     card.className="card";
     card.innerHTML = `
@@ -710,9 +702,8 @@
   }
 
   function nextLevel(){
-    // tiny time bonus for finishing with time to spare
     const pctLeft = state.remaining / (settings.timerSec[settings.difficulty]||780);
-    const bonus = Math.round(settings.timeBonusMax * pctLeft * 0.2); // gentle
+    const bonus = Math.round(settings.timeBonusMax * pctLeft * 0.2);
     state.score += bonus;
 
     state.levelIndex++;
@@ -800,14 +791,11 @@
     });
   }
 
-  /*** Minimal inline tests (dev self-check) **********************************/
+  /*** Minimal inline tests ***************************************************/
   function selfTests(){
     let passed=0,total=0;
-    // scoring clamp test
     total++; if(clamp(10,0,5)===5) passed++;
-    // shuffle immutability
     total++; { const a=[1,2,3]; const b=shuffle(a); if(a.length===b.length && a!==b) passed++; }
-    // sha256 length (hex 64 chars)
     total++; sha256("abc").then(hex=>{ if(hex.length===64) passed++; console.info(`Self-tests: ${passed}/${total}`); });
   }
   selfTests();
