@@ -77,7 +77,6 @@
   @media(min-width:720px){ .grid.cols-2{ grid-template-columns:1fr 1fr } }
 
   .deco{
-    /* Art-deco geometric frame using layered gradients */
     border-radius:var(--radius); padding:var(--space-5); position:relative; overflow:hidden;
     background:
       conic-gradient(from 90deg at 10% 10%, transparent 0 25%, rgba(148,7,49,.12) 0 50%, transparent 0 100%),
@@ -90,8 +89,6 @@
     font-weight:900; letter-spacing:.04em; text-transform:uppercase; font-size: clamp(20px, 4.5vw, 36px);
     color:var(--crimson);
   }
-
-  /* Airplane SVG badge */
   .plane{ width:32px; height:32px; }
   .plane svg{ display:block }
 
@@ -108,7 +105,6 @@
   .pill[data-selected="true"]{ box-shadow:0 0 0 3px var(--focus) inset; }
 
   .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:#0002; border:1px solid #0003; padding:2px 6px; border-radius:6px }
-
   .muted{ color:var(--muted) }
 
   .dialog-backdrop{
@@ -125,15 +121,12 @@
   .progress > div{ height:100%; background:linear-gradient(90deg, var(--crimson), var(--pink-a)); width:0% }
 
   .notice{ padding:12px 14px; border-left:6px solid var(--pink-a); background:rgba(219,74,106,.08); border-radius:8px }
-
   .footer-actions{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-end }
 
-  /* Focus visible outlines for interactive elements globally */
   a:focus-visible, button:focus-visible, [tabindex]:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
     outline:3px dashed var(--focus); outline-offset:2px;
   }
 
-  /* Reduced motion: disable transitions/animations */
   @media (prefers-reduced-motion: reduce){
     *{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }
   }
@@ -144,7 +137,6 @@
   <header class="deco" role="banner" aria-label="Game header">
     <h1 class="title">
       <span class="plane" aria-hidden="true">
-        <!-- Inline art-deco airplane (brand colors) -->
         <svg viewBox="0 0 64 64" role="img" aria-label="Crimson airplane">
           <path fill="#940731" d="M3 36l20-6 6-20c.6-2.1 3.6-2.1 4.2 0l6 20 20 6c2.1.6 2.1 3.6 0 4.2l-20 6-6 20c-.6 2.1-3.6 2.1-4.2 0l-6-20-20-6c-2.1-.6-2.1-3.6 0-4.2z"/>
           <circle cx="32" cy="32" r="4" fill="#db4a6a"/>
@@ -161,7 +153,6 @@
   <div id="screen"></div>
 </div>
 
-<!-- Accessible modal (Teach Me / Hints / Admin) -->
 <div class="dialog-backdrop" id="modal-backdrop" role="none">
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-desc">
     <h2 id="modal-title" class="title" style="font-size:22px">Dialog</h2>
@@ -327,6 +318,332 @@
           "options":["Likely credible","Likely not credible"],
           "answer":0,
           "why":"Peer review, transparency, date acceptable."
+        },
+
+        {
+          "prompt":"A 2024 U.S. Bureau of Labor Statistics page with downloadable tables and methodology notes.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Government source, clear methods, current and citable."
+        },
+        {
+          "prompt":"A personal blog claiming a town’s water is toxic, citing only anecdotal stories and no test results.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Anecdotal, no data or citations; weak authority."
+        },
+        {
+          "prompt":"A 2015 conference abstract without a corresponding full paper or data, used as sole evidence.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Minimal detail and older; insufficient for strong claims."
+        },
+        {
+          "prompt":"An article in a journal listed on predatory journal watchlists, with promises of '48-hour peer review'.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Predatory features undermine peer review and integrity."
+        },
+        {
+          "prompt":"A university library research guide summarizing how to search discipline databases, linking to sources.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Institutional authorship; purpose is instructional; sources linked."
+        },
+        {
+          "prompt":"A Wikipedia article used as the only citation in a medical paper’s background section.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Wikipedia is a starting point, not a final scholarly source."
+        },
+        {
+          "prompt":"An NGO’s 2023 report with full methodology, data appendix, and funding disclosures.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Transparent methods and disclosures; recent; appropriate authority."
+        },
+        {
+          "prompt":"A company white paper praising its own product, with selective graphs and no external citations.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Marketing purpose; selection bias; lacks independent evidence."
+        },
+        {
+          "prompt":"A newspaper op-ed arguing policy based on personal views, minimal sourcing.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Opinion genre; not intended as evidence without corroboration."
+        },
+        {
+          "prompt":"A 2022 systematic review of randomized trials following PRISMA, in a reputable journal.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"High-level evidence, transparent protocol and selection."
+        },
+        {
+          "prompt":"A press release summarizing a new study, but with no link to the paper or dataset.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Secondary summary without verifiable primary source."
+        },
+        {
+          "prompt":"A YouTube influencer video claiming a 'miracle' remedy; affiliate links in description; no citations.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Commercial incentives and extraordinary claims without evidence."
+        },
+        {
+          "prompt":"A public dataset on a .gov portal with a DOI, version history, and data dictionary.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Provenance, persistence (DOI), and documentation support quality."
+        },
+        {
+          "prompt":"A preprint marked 'not peer reviewed' used to make definitive clinical recommendations.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Preprints are preliminary; not suitable for firm clinical claims."
+        },
+        {
+          "prompt":"A 2009 academic book chapter from Oxford University Press on a historical topic.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Reputable press; currency acceptable for historical analysis."
+        },
+        {
+          "prompt":"An anonymous forum post offering a 'cure' with personal anecdotes only.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"No identifiable authority; anecdotal; likely bias."
+        },
+        {
+          "prompt":"A meta-analysis declaring conflicts of interest and detailing how bias was mitigated.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Disclosure and mitigation steps increase transparency and trust."
+        },
+        {
+          "prompt":"A 2018 study that has been formally retracted in 2020, still being cited as evidence.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Retraction invalidates relying on the study’s findings."
+        },
+        {
+          "prompt":"A museum curator’s catalog essay with footnotes, provenance details, and archival references.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Subject authority, sourcing, and documentation support credibility."
+        },
+        {
+          "prompt":"A broken journal link that redirects to an ad-filled mirror site hosting a PDF of unknown origin.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Unverified mirror copies raise integrity and tampering concerns."
+        },
+        {
+          "prompt":"A survey study with n=12 used to claim population-wide effects.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Tiny sample size; overgeneralization; weak statistical power."
+        },
+        {
+          "prompt":"A verbatim transcript of a government hearing used as a primary source.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Primary source with clear provenance; useful for factual record."
+        },
+        {
+          "prompt":"A patent application cited to prove a technology’s effectiveness in real-world use.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Patents describe claims, not verified efficacy data."
+        },
+        {
+          "prompt":"World Health Organization clinical guidelines updated in 2023 with references to evidence tiers.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Reputable international body; current; evidence-ranked guidance."
+        },
+        {
+          "prompt":"A screenshot of a paywalled article on social media with highlighted claims but no source link.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Unverifiable context; no citation trail; risk of misinformation."
+        },
+        {
+          "prompt":"A 1998 peer-reviewed paper used to justify a 2025 claim about current AI model capabilities.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Currency mismatch; field has changed substantially."
+        },
+        {
+          "prompt":"A trade magazine feature summarizing industry trends, quoting named experts and linking to reports.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Appropriate for context and industry perspectives; sources cited."
+        },
+        {
+          "prompt":"A GitHub repository of a dataset uploaded by an unknown user with no README or license.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Unknown provenance; lacks documentation; not verifiable."
+        },
+        {
+          "prompt":"A 2017 doctoral dissertation indexed in ProQuest with committee members listed and a long bibliography.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Scholarly work with oversight and full citations."
+        },
+        {
+          "prompt":"A breaking-news article posted two hours after an event, relying solely on one unnamed eyewitness.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Insufficient sourcing and verification; early reports are tentative."
+        },
+
+        {
+          "prompt":"A 2023 reproducibility package on OSF with a DOI, scripts, and data that recreate all tables.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Open materials and DOI improve transparency and verifiability."
+        },
+        {
+          "prompt":"A TikTok video claiming 'caffeine stunts growth' with no citations and dramatic music.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"No sources; emotional framing; platform not inherently scholarly."
+        },
+        {
+          "prompt":"An arXiv preprint clearly labeled 'not peer reviewed' used to justify hospital policy changes.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Preprints are preliminary; policy needs vetted evidence."
+        },
+        {
+          "prompt":"A 2024 Cochrane Review summarizing RCTs with risk-of-bias tables and GRADE ratings.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Systematic methods and bias ratings support trustworthy synthesis."
+        },
+        {
+          "prompt":"A startup’s landing page asserting 'clinically proven' without linking trials or registries.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Marketing claim with no primary evidence or registration."
+        },
+        {
+          "prompt":"A dataset on data.gov with version history, codebook, and contact for the stewarding agency.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Provenance and documentation increase reliability."
+        },
+        {
+          "prompt":"A paywalled journal article with a DOI, author affiliations, and received/accepted dates.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Standard scholarly signals; paywall status doesn’t reduce credibility."
+        },
+        {
+          "prompt":"A personal Substack essay making causal claims from correlational data without controls.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Causation implied from correlation; lacks methods and review."
+        },
+        {
+          "prompt":"A 2020 'expression of concern' posted on a paper; authors have not addressed issues.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Reliability is in doubt pending correction or retraction."
+        },
+        {
+          "prompt":"A replication study by an independent team that reproduces the main effects and shares code.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Independent replication strengthens confidence."
+        },
+        {
+          "prompt":"A conference keynote sponsored by a vendor, praising the sponsor’s tool with no comparative data.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Conflict of interest and lack of evidence."
+        },
+        {
+          "prompt":"An encyclopedia entry in a peer-reviewed reference work (updated 2022) with citations.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Scholarly reference, current, cites sources."
+        },
+        {
+          "prompt":"A screenshot of an email 'from a scientist' posted on social media, no headers or context.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Unverifiable provenance and context."
+        },
+        {
+          "prompt":"A randomized controlled trial preregistered on ClinicalTrials.gov with protocol and CONSORT flowchart.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Preregistration and reporting standards increase trust."
+        },
+        {
+          "prompt":"A news site known for satire being cited as factual evidence in a policy debate.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Satire is not an evidence source."
+        },
+        {
+          "prompt":"A 2012 methods paper on a lab assay that is still the gold standard, widely cited and unretracted.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Foundational methods can remain current if not superseded."
+        },
+        {
+          "prompt":"A community survey with a 9% response rate generalized to the whole city without caveats.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Severe nonresponse bias; over-generalization."
+        },
+        {
+          "prompt":"A university press monograph (2023) on migration history with extensive archival citations.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Reputable press; documented sources; appropriate currency."
+        },
+        {
+          "prompt":"A blog post that cherry-picks a single study while ignoring multiple systematic reviews.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"Selective evidence use indicates bias."
+        },
+        {
+          "prompt":"A technical standard (ISO) document outlining test protocols and citing peer-reviewed sources.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Standards bodies synthesize vetted methods."
+        },
+        {
+          "prompt":"A PDF hosted on a random file-sharing site with no author, date, or references.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"No provenance; high risk of misinformation."
+        },
+        {
+          "prompt":"An editorial labeled 'Perspective' in a top medical journal arguing for further research.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Clearly marked genre; credible venue; appropriate claims."
+        },
+        {
+          "prompt":"A plot image on X claiming a breakthrough but axes are unlabeled and source is 'private dataset'.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":1,
+          "why":"No data transparency or labeling; not verifiable."
+        },
+        {
+          "prompt":"A pre-registered analysis plan on OSF with time-stamped hashes, followed by matching published results.",
+          "options":["Likely credible","Likely not credible"],
+          "answer":0,
+          "why":"Pre-registration reduces p-hacking and HARKing; increases trust."
         }
       ]
     },
@@ -342,14 +659,25 @@
       "signals": [
         {"q":"Which is a strong sign of peer review?","choices":["A DOI and reference list","Stock photos and pop-up ads","Anonymous author"],"answer":0,"why":"DOIs and reference lists are common in scholarly articles."},
         {"q":"Best element to copy for a citation?","choices":["The URL bar copy of a long session link","The DOI or permalink","The headline font style"],"answer":1,"why":"Permalinks/DOIs are stable; session URLs break."},
-        {"q":"You find a 404 on a scholarly article link. First move?","choices":["Give up and go nap","Try Primo 'Find It' or the journal title search","Email the author memes"],"answer":1,"why":"Link resolvers/journal search often locate full text."}
+        {"q":"You find a 404 on a scholarly article link. First move?","choices":["Give up and go nap","Try Primo 'Find It' or the journal title search","Email the author memes"],"answer":1,"why":"Link resolvers/journal search often locate full text."},
+        {"q":"Which limiter most reliably narrows to peer-reviewed content?","choices":["Full Text","Scholarly (Peer Reviewed)","Subject: Any"],"answer":1,"why":"Most library databases include a 'Scholarly/Peer Reviewed' limiter."},
+        {"q":"What field search most precisely targets titles?","choices":["Keyword/Anywhere","Title field","Abstract field"],"answer":1,"why":"Title field search focuses on the most indicative terms."},
+        {"q":"You need the latest clinical guidance. Where first?","choices":["A 2014 textbook chapter","Recent systematic reviews/guidelines","A random forum thread"],"answer":1,"why":"Current guidelines and recent reviews synthesize best evidence."},
+        {"q":"Best sign an article is a review article?","choices":["Has a DOI","Mentions 'Received' date","Structured abstract with 'Background/Methods/Results' AND many references"],"answer":2,"why":"Review articles synthesize many sources; often structured."},
+        {"q":"Which URL is least likely to break later?","choices":["Publisher permalink","Proxy session URL with many parameters","Search results page URL"],"answer":0,"why":"Permalinks are intended to persist."},
+        {"q":"You see 'Accepted' and 'Published Online' dates. This suggests…","choices":["Editorial blog","Peer-reviewed workflow","Marketing site"],"answer":1,"why":"These dates appear in peer-reviewed publishing pipelines."},
+        {"q":"Good first step to verify an image's origin?","choices":["Reverse image search","Trust the watermark","Check number of likes"],"answer":0,"why":"Reverse search helps locate original context and source."},
+        {"q":"Which clue hints at predatory journals?","choices":["Unrealistically fast '48-hour peer review' promises","Clear editorial board and indexing info","COPE membership and policies"],"answer":0,"why":"Fast guarantees are a red flag."},
+        {"q":"Best way to broaden concept coverage?","choices":["Add synonyms with OR","Add NOT terms","Use fewer subject filters"],"answer":0,"why":"OR broadens by including alternatives."},
+        {"q":"When a study says 'pre-registered', it implies…","choices":["Methods were decided after seeing results","Analysis plan was specified in advance","It was paywalled"],"answer":1,"why":"Preregistration reduces p-hacking and HARKing."},
+        {"q":"Stable identifier for datasets?","choices":["Shortened URL","DOI","Screenshot"],"answer":1,"why":"DOIs persist and are resolvable."},
+        {"q":"Which is a primary source example?","choices":["Meta-analysis","Newspaper editorial","Digitized census microdata"],"answer":2,"why":"Microdata are original records collected at the time."}
       ]
     }
   ]
 }
 </script>
 
-<!-- Load external JS (must exist at repo root as app.js) -->
 <script src="app.js" defer></script>
 </body>
 </html>
